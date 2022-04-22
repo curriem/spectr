@@ -472,14 +472,14 @@ class CrossCorrelation:
         self.significance_chi2 = significance_chi2
         self.significance_ttest = significance_ttest
 
-    def compare_to_injected(self, injected_ccf):
+    def compare_to_injected(self, injected_ccf, trail_bound=25):
 
         ccf_real = self.integrated_ccf
         ccf_model = injected_ccf - ccf_real
 
-        iout = np.abs(self.rv_grid) >= 50         # boolean
+        iout = np.abs(self.rv_grid) >= trail_bound         # boolean
         nout = iout.sum()               # how many 'trues'
-        iin = np.abs(self.rv_grid) < 50           # boolean
+        iin = np.abs(self.rv_grid) < trail_bound           # boolean
         nin = iin.sum()                 # how many 'falses'
 
         # Scale the noiseless model CCF to the real CCF - Need to impose slope > 0 (correlation)
@@ -500,7 +500,7 @@ class CrossCorrelation:
         var_model = np.std(ccf_res[iout])**2   # CCF variance (away from peak)
         chi2_model = (ccf_res[iin]**2).sum() / var_model
         sigma_model = stats.norm.isf(stats.chi2.sf(chi2_model,nin-3)/2)
-
+        self.sigma_model = sigma_model
         d_sig = self.significance_chi2 - sigma_model
 
         self.d_sig = d_sig

@@ -55,10 +55,10 @@ def cross_correlate_logL_Matteo(data, model, lam, v_shift_grid):
     return ccf
 
 
-def calc_significance_chi2(ccf, rv_grid):
-    iout = np.abs(rv_grid) >= 50         # boolean
+def calc_significance_chi2(ccf, rv_grid, trail_bound=25):
+    iout = np.abs(rv_grid) >= trail_bound         # boolean
     nout = iout.sum()               # how many 'trues'
-    iin = np.abs(rv_grid) < 50           # boolean
+    iin = np.abs(rv_grid) < trail_bound           # boolean
     nin = iin.sum()                 # how many 'falses'
 
     ccf_variance = np.std(ccf[iout])**2    # CCF variance (away from peak)
@@ -67,10 +67,10 @@ def calc_significance_chi2(ccf, rv_grid):
     ccf_sigma = stats.norm.isf(stats.chi2.sf(ccf_chi2,nin-1)/2)   # Chi-square -> sigma
     return ccf_sigma
 
-def calc_significance_simple(ccf, rv_grid):
-    iout = np.abs(rv_grid) >= 50         # boolean
+def calc_significance_simple(ccf, rv_grid, trail_bound=25):
+    iout = np.abs(rv_grid) >= trail_bound         # boolean
     nout = iout.sum()               # how many 'trues'
-    iin = np.abs(rv_grid) < 50           # boolean
+    iin = np.abs(rv_grid) < trail_bound           # boolean
     nin = iin.sum()                 # how many 'falses'
 
     ccf_std = np.std(ccf[iout])    # CCF variance (away from peak)
@@ -79,10 +79,10 @@ def calc_significance_simple(ccf, rv_grid):
     ccf_sigma = ccf_max / ccf_std
     return ccf_sigma
 
-def calc_significance_ttest(ccf, rv_grid):
-    iout = np.abs(rv_grid) >= 50         # boolean
+def calc_significance_ttest(ccf, rv_grid, trail_bound=25):
+    iout = np.abs(rv_grid) >= trail_bound         # boolean
     nout = iout.sum()               # how many 'trues'
-    iin = np.abs(rv_grid) < 50           # boolean
+    iin = np.abs(rv_grid) < trail_bound           # boolean
     nin = iin.sum()                 # how many 'falses'
 
 
