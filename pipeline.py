@@ -24,7 +24,7 @@ from .cross_correlation import *
 
 class SimulateObservation:
 
-    def __init__(self, star_name, era, molecule, band, obs_type, instrument_R=1e5):#, telescope_name, distance,
+    def __init__(self, star_name, era, molecule, band, obs_type, instrument_R=1e5, verbose=False):#, telescope_name, distance,
                  #Vsystem, Vbary):
 
         self.star_name = star_name
@@ -33,6 +33,7 @@ class SimulateObservation:
         self.band = band
         self.obs_type = obs_type
         self.instrument_R = instrument_R
+        self.verbose = verbose
         #self.telescope_name = telescope_name
         #self.distance = distance
         #self.Vsystem = Vsystem
@@ -166,6 +167,17 @@ class SimulateObservation:
 
         dist = dist * unit.pc
 
+        self.dist = dist
+        self.incl = inclination
+        self.a_plan = a_plan
+
+        q = 1.
+        fpa = 1.
+        T = 0.1
+        D = 30
+
+        self.tele_diam = D
+
         norders = 1
 
         # calculate rotational velocities:
@@ -203,10 +215,11 @@ class SimulateObservation:
                 star_RVs[i] = RV_s.value
                 RV_p = calc_RVp(K_p, phase)
 
-                print("#### Phase {} ####".format(phase))
-                print("star RV:", RV_s)
-                print("planet RV:", RV_p)
-                print("########################\n")
+                if self.verbose:
+                    print("#### Phase {} ####".format(phase))
+                    print("star RV:", RV_s)
+                    print("planet RV:", RV_p)
+                    print("########################\n")
                 total_plan_RV[i] = (RV_sys + RV_bary + RV_p).value
 
                 fstar_path1_i = np.copy(fstar_path1)
@@ -221,6 +234,7 @@ class SimulateObservation:
                 fstar_path2_matrix[order, i] = fstar_path2_i
                 fplan_path2_matrix[order, i] = fplan_path2_i
 
+        self.total_plan_RV = total_plan_RV
         self.star_RVs = star_RVs
         ########################################################################
 
@@ -297,10 +311,7 @@ class SimulateObservation:
 
         ############### Step 1g planet/star photon counts ################
 
-        q = 1.
-        fpa = 1.
-        T = 0.1
-        D = 30
+
 
         cs_matrix = np.empty_like(Fp_observer_matrix)
         cp_matrix = np.empty_like(Fp_observer_matrix)
