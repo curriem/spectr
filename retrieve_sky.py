@@ -180,7 +180,7 @@ class SkyFlux:
                 incl_loweratm	=	'Y',
                 incl_upperatm	=	'Y',
                 incl_airglow	=	'Y',
-                incl_therm	=	'N',
+                incl_therm	=	'Y',
                 therm_t1	=	0.0,
                 therm_e1	=	0.0,
                 therm_t2	=	0.0,
