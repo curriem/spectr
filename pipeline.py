@@ -250,12 +250,13 @@ class SimulateObservation:
         skycalc.wgrid_mode = "fixed_spectral_resolution"
         skycalc.wres = skycalc_R
         skycalc.airmass = 1.15
-        skycalc.moon_sun_sep = 45
+        skycalc.moon_sun_sep = 90.0
         # thermal
+        skycalc.incl_therm = "Y"
         skycalc.therm_t1 = 285
         skycalc.therm_e1 = 0.14
 
-        skycalc.run_skycalc('./skyflux_params.fits', rmfits=False, rmfits_dir="./")
+        skycalc.run_skycalc('./skycalc_{}_{}.fits'.format(self.molecule, self.band))
 
         # interpolate onto spectrum wl grid
         f = interp1d(skycalc.lam, skycalc.trans, fill_value = "extrapolate")
