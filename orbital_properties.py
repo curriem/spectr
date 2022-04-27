@@ -78,3 +78,25 @@ def calc_v_proj_plan(incl, R_plan, P_rot_plan):
 def calc_v_refl_plan(v_star_planframe, v_proj_plan):
     """two contributions to the broadening of the reflected light spectrum"""
     return np.sqrt(v_star_planframe**2 + v_proj_plan**2)
+
+
+def projected_sep(phase, dist, incl, a_p, lam_um, tele_diam, w_arg_peri=90):
+
+    w_arg_peri = (w_arg_peri*unit.deg).to(unit.rad)
+    incl = incl.to(unit.rad)
+    if phase.unit.is_equivalent(unit.radian):
+        pass
+    elif phase.unit.is_equivalent(unit.deg):
+        phase = phase.to(unit.radian)
+    else:
+        assert False, "specify phase units"
+    a_p_pc = (a_p).to(unit.pc)
+    tele_diam *= unit.m
+    lam_um*=unit.um
+
+    sep = (a_p_pc/dist) * np.sqrt(np.cos(w_arg_peri+phase)**2 + np.sin(w_arg_peri+phase)**2*np.cos(incl)) * unit.radian
+    sep = sep.to(unit.marcsec)
+
+    IWA = (1.22 * (lam_um.to(unit.m)/tele_diam).value * unit.radian).to(unit.marcsec)
+
+    return sep, IWA
