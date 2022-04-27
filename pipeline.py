@@ -392,22 +392,21 @@ class SimulateObservation:
         self.signal_matrix = signal_matrix
         self.background_matrix = background_matrix
 
-        data_buffer = 100
+        naninds = ~np.isnan(simulated_data[0, 0, :])
 
-        self.data_buffer = data_buffer
+        self.data_naninds = naninds
 
 
-
-        self.simulated_data = simulated_data[:, :, data_buffer:-data_buffer]
-        self.simulated_data_no_noise = simulated_data_no_noise[:, :, data_buffer:-data_buffer]
-        self.instrument_lam = np.expand_dims(instrument_lam[data_buffer:-data_buffer], axis=0)
-        self.instrument_dlam = np.expand_dims(instrument_dlam[data_buffer:-data_buffer], axis=0)
+        self.simulated_data = simulated_data[:, :, naninds]
+        self.simulated_data_no_noise = simulated_data_no_noise[:, :, naninds]
+        self.instrument_lam = np.expand_dims(instrument_lam[naninds], axis=0)
+        self.instrument_dlam = np.expand_dims(instrument_dlam[naninds], axis=0)
 
     def new_observation(self):
         new_rand_nums = np.random.randn(self.signal_matrix.shape[0], self.signal_matrix.shape[1], self.signal_matrix.shape[2])
         new_noise = new_rand_nums * np.sqrt(self.signal_matrix + self.background_matrix)
         new_data = self.signal_matrix + new_noise
-        self.new_data = new_data[:, :, self.data_buffer:-self.data_buffer]
+        self.new_data = new_data[:, :, self.data_naninds]
 
 
 class RemoveTellurics:
