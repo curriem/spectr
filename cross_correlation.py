@@ -184,9 +184,9 @@ def inject_model(wl_data, spec_data, wl_model, spec_model, rvtot, kp, ph, scale,
     spec_data_injected = np.copy(spec_data)
     for j in range(nph):
         RV_planet = calc_RVp(kp, ph[j], ecc=0, w_arg_peri=90)
-        model_RV = RV_planet + rvtot
+        model_RV = RV_planet + rvtot[j]
 
-        wl_model_shift = wl_data * (1.0 - model_RV[j]/2.998E5) # doppler shift
+        wl_model_shift = wl_data * (1.0 - model_RV/2.998E5) # doppler shift
         spec_model_shift = splev(wl_model_shift, cs, der=0) # the model interpolated onto data wl grid
 
         spec_model_shift *= scale # scale the model spectrum

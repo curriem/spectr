@@ -219,6 +219,7 @@ class SimulateObservation:
                     print("#### Phase {} ####".format(phase))
                     print("star RV:", RV_s)
                     print("planet RV:", RV_p)
+                    print("total plan RV shift:", RV_sys + RV_bary + RV_p)
                     print("########################\n")
                 total_plan_RV[i] = (RV_sys + RV_bary + RV_p).value
 
@@ -268,6 +269,9 @@ class SimulateObservation:
         fstar_path2_matrix *= telluric_transmittance
         fplan_path2_matrix *= telluric_transmittance
 
+        fstar_path1_matrix_no_T = np.copy(fstar_path1_matrix)
+        fstar_path2_matrix_no_T = np.copy(fstar_path2_matrix)
+        fplan_path2_matrix_no_T = np.copy(fplan_path2_matrix)
         ########################################################################
 
         ############### Step 1d instrumental broadening ##################
@@ -277,6 +281,10 @@ class SimulateObservation:
                 fstar_path1_matrix[order, i] = instrumental_broadening(fstar_path1_matrix[order, i], self.lam, self.instrument_R)
                 fstar_path2_matrix[order, i] = instrumental_broadening(fstar_path2_matrix[order, i], self.lam, self.instrument_R)
                 fplan_path2_matrix[order, i] = instrumental_broadening(fplan_path2_matrix[order, i], self.lam, self.instrument_R)
+
+                fstar_path1_matrix_no_T[order, i] = instrumental_broadening(fstar_path1_matrix_no_T[order, i], self.lam, self.instrument_R)
+                fstar_path2_matrix_no_T[order, i] = instrumental_broadening(fstar_path2_matrix_no_T[order, i], self.lam, self.instrument_R)
+                fplan_path2_matrix_no_T[order, i] = instrumental_broadening(fplan_path2_matrix_no_T[order, i], self.lam, self.instrument_R)
         ########################################################################
 
         ############### Step 1e interpolate onto instrument wl grid ##################
@@ -290,12 +298,21 @@ class SimulateObservation:
         fstar_path2_instrument_matrix = np.empty((norders, len(phases), len(instrument_lam)))
         fplan_path2_instrument_matrix = np.empty((norders, len(phases), len(instrument_lam)))
 
+        fstar_path1_instrument_matrix_no_T = np.empty((norders, len(phases), len(instrument_lam)))
+        fstar_path2_instrument_matrix_no_T = np.empty((norders, len(phases), len(instrument_lam)))
+        fplan_path2_instrument_matrix_no_T = np.empty((norders, len(phases), len(instrument_lam)))
+
         for order in range(norders):
             for i in range(len(phases)):
                 fstar_path1_instrument_matrix[order, i] = bin_to_instrument_lam(fstar_path1_matrix[order, i], self.lam, instrument_lam, instrument_dlam)
                 fstar_path2_instrument_matrix[order, i] = bin_to_instrument_lam(fstar_path1_matrix[order, i], self.lam, instrument_lam, instrument_dlam)
                 fplan_path2_instrument_matrix[order, i] = bin_to_instrument_lam(fplan_path2_matrix[order, i], self.lam, instrument_lam, instrument_dlam)
 
+                fstar_path1_instrument_matrix_no_T[order, i] = bin_to_instrument_lam(fstar_path1_matrix_no_T[order, i], self.lam, instrument_lam, instrument_dlam)
+                fstar_path2_instrument_matrix_no_T[order, i] = bin_to_instrument_lam(fstar_path1_matrix_no_T[order, i], self.lam, instrument_lam, instrument_dlam)
+                fplan_path2_instrument_matrix_no_T[order, i] = bin_to_instrument_lam(fplan_path2_matrix_no_T[order, i], self.lam, instrument_lam, instrument_dlam)
+
+        self.simulated_data_no_tellurics = fplan_path2_instrument_matrix_no_T / fstar_path2_instrument_matrix_no_T
         ########################################################################
 
         ############### Step 1f calculate fluxes ################
@@ -463,7 +480,7 @@ class CrossCorrelation:
     def run(self):
 
         # ccf on real data
-        ccf, rv_grid = cc_at_vrest(self.wl_data, self.spec_data, self.wl_model,
+        ccf, rv_grid = cc_at_vrest(self.wl_data[:, 10:-10], self.spec_data[:, :, 10:-10], self.wl_model, # had to include the wl buffer because funky interpolation things happen on the edges when you inject the model
                                    self.spec_model, self.kp, self.ph,
                                    self.rvtot, self.ncc)
                                   # hipass=False)
@@ -487,6 +504,7 @@ class CrossCorrelation:
 
         ccf_real = self.integrated_ccf
         ccf_model = injected_ccf - ccf_real
+        self.ccf_model = ccf_model
 
         iout = np.abs(self.rv_grid) >= trail_bound         # boolean
         nout = iout.sum()               # how many 'trues'
@@ -502,8 +520,12 @@ class CrossCorrelation:
         coef[0] = np.abs(coef[0])
         ccf_fit = coef[0]*ccf_model + coef[1]
 
+        self.ccf_fit = ccf_fit
+
         # Computing the residual cross correlation function
         ccf_res = ccf_real - ccf_fit
+
+        self.ccf_res = ccf_res
 
         # Doing statistical tests on residual cross correlation function.
         # Note that dof decreases by 2 because we are fitting an apmplitude and
