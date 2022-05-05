@@ -114,6 +114,12 @@ class SimulateObservation:
         self.lam = lam[sort_inds]
         self.fstar = fstar[sort_inds]
         self.fplan = fplan[sort_inds]
+        self.fplan_no_mol = fplan_no_mol[sort_inds]
+
+        normalization_coeff = np.max(self.fplan)
+        self.fplan_only_mol = self.fplan / self.fplan_no_mol * normalization_coeff
+
+
 
         if self.obs_type == "tran":
             smart_tran = smart.readsmart.Trnst('./metadata/smart_runs/{}/tran/{}/{}_{}_{}_{}_{}cm.trnst'.format(star_name, molecule, star_name, molecule, band, wnmin, wnmax))
@@ -257,7 +263,7 @@ class SimulateObservation:
         skycalc.therm_t1 = 285
         skycalc.therm_e1 = 0.14
 
-        skycalc.run_skycalc('./skycalc_{}_{}.fits'.format(self.molecule, self.band))
+        skycalc.run_skycalc('../metadata/sky/skycalc_{}_{}.fits'.format(self.molecule, self.band))
 
         # interpolate onto spectrum wl grid
         f = interp1d(skycalc.lam, skycalc.trans, fill_value = "extrapolate")
