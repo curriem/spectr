@@ -289,9 +289,9 @@ class SimulateObservation:
                 fstar_path2_matrix[order, i] = instrumental_broadening(fstar_path2_matrix[order, i], self.lam, self.instrument_R)
                 fplan_path2_matrix[order, i] = instrumental_broadening(fplan_path2_matrix[order, i], self.lam, self.instrument_R)
 
-                fstar_path1_matrix_no_T[order, i] = instrumental_broadening(fstar_path1_matrix_no_T[order, i], self.lam, self.instrument_R)
-                fstar_path2_matrix_no_T[order, i] = instrumental_broadening(fstar_path2_matrix_no_T[order, i], self.lam, self.instrument_R)
-                fplan_path2_matrix_no_T[order, i] = instrumental_broadening(fplan_path2_matrix_no_T[order, i], self.lam, self.instrument_R)
+                # fstar_path1_matrix_no_T[order, i] = instrumental_broadening(fstar_path1_matrix_no_T[order, i], self.lam, self.instrument_R)
+                # fstar_path2_matrix_no_T[order, i] = instrumental_broadening(fstar_path2_matrix_no_T[order, i], self.lam, self.instrument_R)
+                # fplan_path2_matrix_no_T[order, i] = instrumental_broadening(fplan_path2_matrix_no_T[order, i], self.lam, self.instrument_R)
         ########################################################################
 
         ############### Step 1e interpolate onto instrument wl grid ##################
@@ -305,9 +305,9 @@ class SimulateObservation:
         fstar_path2_instrument_matrix = np.empty((norders, len(phases), len(instrument_lam)))
         fplan_path2_instrument_matrix = np.empty((norders, len(phases), len(instrument_lam)))
 
-        fstar_path1_instrument_matrix_no_T = np.empty((norders, len(phases), len(instrument_lam)))
-        fstar_path2_instrument_matrix_no_T = np.empty((norders, len(phases), len(instrument_lam)))
-        fplan_path2_instrument_matrix_no_T = np.empty((norders, len(phases), len(instrument_lam)))
+        # fstar_path1_instrument_matrix_no_T = np.empty((norders, len(phases), len(instrument_lam)))
+        # fstar_path2_instrument_matrix_no_T = np.empty((norders, len(phases), len(instrument_lam)))
+        # fplan_path2_instrument_matrix_no_T = np.empty((norders, len(phases), len(instrument_lam)))
 
         for order in range(norders):
             for i in range(len(phases)):
@@ -315,9 +315,9 @@ class SimulateObservation:
                 fstar_path2_instrument_matrix[order, i] = bin_to_instrument_lam(fstar_path1_matrix[order, i], self.lam, instrument_lam, instrument_dlam)
                 fplan_path2_instrument_matrix[order, i] = bin_to_instrument_lam(fplan_path2_matrix[order, i], self.lam, instrument_lam, instrument_dlam)
 
-                fstar_path1_instrument_matrix_no_T[order, i] = bin_to_instrument_lam(fstar_path1_matrix_no_T[order, i], self.lam, instrument_lam, instrument_dlam)
-                fstar_path2_instrument_matrix_no_T[order, i] = bin_to_instrument_lam(fstar_path1_matrix_no_T[order, i], self.lam, instrument_lam, instrument_dlam)
-                fplan_path2_instrument_matrix_no_T[order, i] = bin_to_instrument_lam(fplan_path2_matrix_no_T[order, i], self.lam, instrument_lam, instrument_dlam)
+                # fstar_path1_instrument_matrix_no_T[order, i] = bin_to_instrument_lam(fstar_path1_matrix_no_T[order, i], self.lam, instrument_lam, instrument_dlam)
+                # fstar_path2_instrument_matrix_no_T[order, i] = bin_to_instrument_lam(fstar_path1_matrix_no_T[order, i], self.lam, instrument_lam, instrument_dlam)
+                # fplan_path2_instrument_matrix_no_T[order, i] = bin_to_instrument_lam(fplan_path2_matrix_no_T[order, i], self.lam, instrument_lam, instrument_dlam)
 
         ########################################################################
 
@@ -401,7 +401,7 @@ class SimulateObservation:
         for order in range(norders):
             for i in range(len(phases)):
                 cspeckle_matrix[order, i,] *= coronagraph_contrast
-                cspeckle_matrix_no_T[order, i,] *= coronagraph_contrast
+                # cspeckle_matrix_no_T[order, i,] *= coronagraph_contrast
 
         ############### Step 1j construct simulated dataset ################
 
