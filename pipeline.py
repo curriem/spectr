@@ -270,9 +270,9 @@ class SimulateObservation:
         f = interp1d(skycalc.lam, skycalc.trans, fill_value = "extrapolate")
         telluric_transmittance = f(self.lam)
 
-        # fstar_path1_matrix_no_T = np.copy(fstar_path1_matrix)
-        # fstar_path2_matrix_no_T = np.copy(fstar_path2_matrix)
-        # fplan_path2_matrix_no_T = np.copy(fplan_path2_matrix)
+        fstar_path1_matrix_no_T = np.copy(fstar_path1_matrix)
+        fstar_path2_matrix_no_T = np.copy(fstar_path2_matrix)
+        fplan_path2_matrix_no_T = np.copy(fplan_path2_matrix)
 
         # add tellurics to spectra
         fstar_path1_matrix *= telluric_transmittance
@@ -289,9 +289,9 @@ class SimulateObservation:
                 fstar_path2_matrix[order, i] = instrumental_broadening(fstar_path2_matrix[order, i], self.lam, self.instrument_R)
                 fplan_path2_matrix[order, i] = instrumental_broadening(fplan_path2_matrix[order, i], self.lam, self.instrument_R)
 
-                # fstar_path1_matrix_no_T[order, i] = instrumental_broadening(fstar_path1_matrix_no_T[order, i], self.lam, self.instrument_R)
-                # fstar_path2_matrix_no_T[order, i] = instrumental_broadening(fstar_path2_matrix_no_T[order, i], self.lam, self.instrument_R)
-                # fplan_path2_matrix_no_T[order, i] = instrumental_broadening(fplan_path2_matrix_no_T[order, i], self.lam, self.instrument_R)
+                fstar_path1_matrix_no_T[order, i] = instrumental_broadening(fstar_path1_matrix_no_T[order, i], self.lam, self.instrument_R)
+                fstar_path2_matrix_no_T[order, i] = instrumental_broadening(fstar_path2_matrix_no_T[order, i], self.lam, self.instrument_R)
+                fplan_path2_matrix_no_T[order, i] = instrumental_broadening(fplan_path2_matrix_no_T[order, i], self.lam, self.instrument_R)
         ########################################################################
 
         ############### Step 1e interpolate onto instrument wl grid ##################
@@ -305,9 +305,9 @@ class SimulateObservation:
         fstar_path2_instrument_matrix = np.empty((norders, len(phases), len(instrument_lam)))
         fplan_path2_instrument_matrix = np.empty((norders, len(phases), len(instrument_lam)))
 
-        # fstar_path1_instrument_matrix_no_T = np.empty((norders, len(phases), len(instrument_lam)))
-        # fstar_path2_instrument_matrix_no_T = np.empty((norders, len(phases), len(instrument_lam)))
-        # fplan_path2_instrument_matrix_no_T = np.empty((norders, len(phases), len(instrument_lam)))
+        fstar_path1_instrument_matrix_no_T = np.empty((norders, len(phases), len(instrument_lam)))
+        fstar_path2_instrument_matrix_no_T = np.empty((norders, len(phases), len(instrument_lam)))
+        fplan_path2_instrument_matrix_no_T = np.empty((norders, len(phases), len(instrument_lam)))
 
         for order in range(norders):
             for i in range(len(phases)):
@@ -315,9 +315,9 @@ class SimulateObservation:
                 fstar_path2_instrument_matrix[order, i] = bin_to_instrument_lam(fstar_path1_matrix[order, i], self.lam, instrument_lam, instrument_dlam)
                 fplan_path2_instrument_matrix[order, i] = bin_to_instrument_lam(fplan_path2_matrix[order, i], self.lam, instrument_lam, instrument_dlam)
 
-                # fstar_path1_instrument_matrix_no_T[order, i] = bin_to_instrument_lam(fstar_path1_matrix_no_T[order, i], self.lam, instrument_lam, instrument_dlam)
-                # fstar_path2_instrument_matrix_no_T[order, i] = bin_to_instrument_lam(fstar_path1_matrix_no_T[order, i], self.lam, instrument_lam, instrument_dlam)
-                # fplan_path2_instrument_matrix_no_T[order, i] = bin_to_instrument_lam(fplan_path2_matrix_no_T[order, i], self.lam, instrument_lam, instrument_dlam)
+                fstar_path1_instrument_matrix_no_T[order, i] = bin_to_instrument_lam(fstar_path1_matrix_no_T[order, i], self.lam, instrument_lam, instrument_dlam)
+                fstar_path2_instrument_matrix_no_T[order, i] = bin_to_instrument_lam(fstar_path1_matrix_no_T[order, i], self.lam, instrument_lam, instrument_dlam)
+                fplan_path2_instrument_matrix_no_T[order, i] = bin_to_instrument_lam(fplan_path2_matrix_no_T[order, i], self.lam, instrument_lam, instrument_dlam)
 
         ########################################################################
 
@@ -326,16 +326,16 @@ class SimulateObservation:
         Fs_observer_matrix = np.empty_like(fstar_path1_instrument_matrix)
         Fp_observer_matrix = np.empty_like(fstar_path1_instrument_matrix)
 
-        # Fs_observer_matrix_no_T = np.empty_like(fstar_path1_instrument_matrix)
-        # Fp_observer_matrix_no_T = np.empty_like(fstar_path1_instrument_matrix)
+        Fs_observer_matrix_no_T = np.empty_like(fstar_path1_instrument_matrix)
+        Fp_observer_matrix_no_T = np.empty_like(fstar_path1_instrument_matrix)
 
         for order in range(norders):
             for i in range(len(phases)):
                 Fs_observer_matrix[order, i] = Fstar(fstar_path1_instrument_matrix[order, i], R_star, a_plan, dist)
                 Fp_observer_matrix[order, i] = Fplan(fplan_path2_instrument_matrix[order, i], R_plan, dist)
 
-                # Fs_observer_matrix_no_T[order, i] = Fstar(fstar_path1_instrument_matrix_no_T[order, i], R_star, a_plan, dist)
-                # Fp_observer_matrix_no_T[order, i] = Fplan(fplan_path2_instrument_matrix_no_T[order, i], R_plan, dist)
+                Fs_observer_matrix_no_T[order, i] = Fstar(fstar_path1_instrument_matrix_no_T[order, i], R_star, a_plan, dist)
+                Fp_observer_matrix_no_T[order, i] = Fplan(fplan_path2_instrument_matrix_no_T[order, i], R_plan, dist)
         ########################################################################
 
         ############### Step 1g planet/star photon counts ################
@@ -345,16 +345,16 @@ class SimulateObservation:
         cs_matrix = np.empty_like(Fp_observer_matrix)
         cp_matrix = np.empty_like(Fp_observer_matrix)
 
-        # cs_matrix_no_T = np.empty_like(Fp_observer_matrix_no_T)
-        # cp_matrix_no_T = np.empty_like(Fp_observer_matrix_no_T)
+        cs_matrix_no_T = np.empty_like(Fp_observer_matrix_no_T)
+        cp_matrix_no_T = np.empty_like(Fp_observer_matrix_no_T)
 
         for order in range(norders):
             for i in range(len(phases)):
                 cs_matrix[order, i] = cstar(q, fpa, T, instrument_lam, instrument_dlam, Fs_observer_matrix[order, i], D)
                 cp_matrix[order, i] = cplan(q, fpa, T, instrument_lam, instrument_dlam, Fp_observer_matrix[order, i], D)
 
-                # cs_matrix_no_T[order, i] = cstar(q, fpa, T, instrument_lam, instrument_dlam, Fs_observer_matrix_no_T[order, i], D)
-                # cp_matrix_no_T[order, i] = cplan(q, fpa, T, instrument_lam, instrument_dlam, Fp_observer_matrix_no_T[order, i], D)
+                cs_matrix_no_T[order, i] = cstar(q, fpa, T, instrument_lam, instrument_dlam, Fs_observer_matrix_no_T[order, i], D)
+                cp_matrix_no_T[order, i] = cplan(q, fpa, T, instrument_lam, instrument_dlam, Fp_observer_matrix_no_T[order, i], D)
         ########################################################################
 
         ############### Step 1h background noise photon counts ################
@@ -397,21 +397,21 @@ class SimulateObservation:
         coronagraph_contrast = 1e-5
 
         cspeckle_matrix = np.copy(cs_matrix)
-        # cspeckle_matrix_no_T = np.copy(cs_matrix_no_T)
+        cspeckle_matrix_no_T = np.copy(cs_matrix_no_T)
         for order in range(norders):
             for i in range(len(phases)):
                 cspeckle_matrix[order, i,] *= coronagraph_contrast
-                # cspeckle_matrix_no_T[order, i,] *= coronagraph_contrast
+                cspeckle_matrix_no_T[order, i,] *= coronagraph_contrast
 
         ############### Step 1j construct simulated dataset ################
 
         simulated_data = np.empty_like(cspeckle_matrix)
         simulated_data_no_noise = np.empty_like(cspeckle_matrix)
-        # simulated_data_no_tellurics = np.empty_like(cspeckle_matrix)
+        simulated_data_no_tellurics = np.empty_like(cspeckle_matrix)
         # random numbers to simulate poisson noise
 
         signal_matrix = np.empty_like(cspeckle_matrix)
-        # signal_matrix_no_T = np.empty_like(cspeckle_matrix)
+        signal_matrix_no_T = np.empty_like(cspeckle_matrix)
         background_matrix = np.empty_like(cspeckle_matrix)
         for order in range(norders):
             rand_nums = np.random.randn(len(phases), len(instrument_lam))
@@ -419,8 +419,8 @@ class SimulateObservation:
             signal = cp_matrix[order]*texp + cspeckle_matrix[order]*texp
             signal_matrix[order,] = signal
 
-            # signal_no_T = cp_matrix_no_T[order]*texp + cspeckle_matrix_no_T[order]*texp
-            # signal_matrix_no_T[order,] = signal_no_T
+            signal_no_T = cp_matrix_no_T[order]*texp
+            signal_matrix_no_T[order,] = signal_no_T
 
             background_matrix[order] = background_per_exposure*np.ones_like(signal)
 
@@ -429,9 +429,10 @@ class SimulateObservation:
             simulated_data[order] = signal + noise
             simulated_data_no_noise[order] = signal
 
-            # simulated_data_no_tellurics[order] = signal_no_T
+            simulated_data_no_tellurics[order] = cp_matrix[order]*texp + noise
 
 
+        self.signal_matrix_no_T = signal_matrix_no_T
         self.signal_matrix = signal_matrix
         self.background_matrix = background_matrix
 
@@ -442,7 +443,7 @@ class SimulateObservation:
 
         self.simulated_data = simulated_data[:, :, naninds]
         self.simulated_data_no_noise = simulated_data_no_noise[:, :, naninds]
-        # self.simulated_data_no_tellurics = simulated_data_no_tellurics[:, :, naninds]
+        self.simulated_data_no_tellurics = simulated_data_no_tellurics[:, :, naninds]
         self.instrument_lam = np.expand_dims(instrument_lam[naninds], axis=0)
         self.instrument_dlam = np.expand_dims(instrument_dlam[naninds], axis=0)
 
@@ -451,6 +452,9 @@ class SimulateObservation:
         new_noise = new_rand_nums * np.sqrt(self.signal_matrix + self.background_matrix)
         new_data = self.signal_matrix + new_noise
         self.new_data = new_data[:, :, self.data_naninds]
+
+        new_data_no_T = self.signal_matrix_no_T + new_noise
+        self.new_data_no_T = new_data_no_T[:, :, self.data_naninds]
 
 
 class RemoveTellurics:
