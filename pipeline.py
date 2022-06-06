@@ -413,6 +413,7 @@ class SimulateObservation:
         signal_matrix = np.empty_like(cspeckle_matrix)
         signal_matrix_no_T = np.empty_like(cspeckle_matrix)
         background_matrix = np.empty_like(cspeckle_matrix)
+        noise_matrix = np.empty_like(cspeckle_matrix)
         for order in range(norders):
             rand_nums = np.random.randn(len(phases), len(instrument_lam))
 
@@ -426,6 +427,8 @@ class SimulateObservation:
 
             noise = rand_nums * np.sqrt(signal + background_per_exposure*np.ones_like(signal))
 
+            noise_matrix = np.sqrt(signal + background_per_exposure*np.ones_like(signal))
+
             simulated_data[order] = signal + noise
             simulated_data_no_noise[order] = signal
 
@@ -435,6 +438,7 @@ class SimulateObservation:
         self.signal_matrix_no_T = signal_matrix_no_T
         self.signal_matrix = signal_matrix
         self.background_matrix = background_matrix
+        self.noise_matrix = noise_matrix
 
         naninds = ~np.isnan(simulated_data[0, 0, :])
 
