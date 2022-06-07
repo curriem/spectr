@@ -462,7 +462,7 @@ class SimulateObservation:
 
         #self.signal_matrix_no_T = signal_matrix_no_T
         self.signal_matrix = signal_matrix
-        # self.background_matrix = background_matrix
+        self.background_matrix = background_per_exposure*np.ones_like(signal_matrix)
         self.noise_matrix = noise_matrix
         self.SNR_matrix = SNR_matrix
 
