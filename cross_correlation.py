@@ -136,7 +136,7 @@ def cc_at_vrest(wl_data, spec_data, wl_model, spec_model, kp, ph, rvtot, ncc, hi
         for cc_ind in range(ncc):
 
             wl_model_shift = wl_data * (1.0 - lagTemp[cc_ind]/2.998E5) # doppler shift
-            spec_model_shift = splev(wl_model_shift, cs, der=0) # the model interpolated onto data wl grid
+            spec_model_shift = splev(wl_model_shift, cs, der=0, ext=1) # the model interpolated onto data wl grid
             for order in range(norders):
                 fVec = spec_data[order,j,].copy()
                 gVec = spec_model_shift[order,].copy()
@@ -154,6 +154,8 @@ def cc_at_vrest(wl_data, spec_data, wl_model, spec_model, kp, ph, rvtot, ncc, hi
                     imin = int(ib*bins)
                     imax = int(imin + bins)
                     yb[ib+1] = np.mean(ccf[io,j,imin:imax])
+                    yb[0] = ccf[io, j, 0]
+                    yb[-1] = ccf[io, j, -1]
                 cs_bin = splrep(xb,yb,s=0.0)
                 fit = splev(np.arange(ncc),cs_bin,der=0)
                 ccf[io,j,] -= fit

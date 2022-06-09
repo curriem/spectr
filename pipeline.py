@@ -342,6 +342,8 @@ class SimulateObservation:
 
         ############### Step 1g planet/star photon counts ################
 
+        self.Fp_observer_matrix = Fp_observer_matrix
+        self.Fs_observer_matrix = Fs_observer_matrix
 
 
         cs_matrix = np.empty_like(Fp_observer_matrix)
@@ -430,12 +432,18 @@ class SimulateObservation:
         noise_matrix = np.empty_like(cspeckle_matrix)
         # noise_matrix_no_T = np.empty_like(cspeckle_matrix)
         SNR_matrix = np.empty_like(cspeckle_matrix)
+
+        planet_matrix = np.empty_like(cspeckle_matrix)
+        star_matrix = np.empty_like(cspeckle_matrix)
+
         # SNR_no_T_matrix = np.empty_like(cspeckle_matrix)
         for order in range(norders):
             rand_nums = np.random.randn(len(phases), len(instrument_lam))
 
             signal = cp_matrix[order]*texp + cspeckle_matrix[order]*texp
             signal_matrix[order,] = signal
+            planet_matrix[order,] = cp_matrix[order]*texp
+            star_matrix[order,] = cspeckle_matrix[order]*texp
 
             noise = np.sqrt(signal + background_per_exposure*np.ones_like(signal))
             noise_matrix[order,] = noise
@@ -465,6 +473,9 @@ class SimulateObservation:
         self.background_matrix = background_per_exposure*np.ones_like(signal_matrix)
         self.noise_matrix = noise_matrix
         self.SNR_matrix = SNR_matrix
+        self.planet_matrix = planet_matrix
+        self.star_matrix = star_matrix
+
 
         naninds = ~np.isnan(simulated_data[0, 0, :])
 
