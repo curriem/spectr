@@ -392,7 +392,7 @@ class SimulateObservation:
         self.Fs_observer_matrix = Fs_observer_matrix
 
 
-        cs_matrix = np.empty_like(Fp_observer_matrix)
+        cs_matrix = np.empty_like(Fs_observer_matrix)
         if self.obs_type == "refl":
             cp_matrix = np.empty_like(Fp_observer_matrix)
 
