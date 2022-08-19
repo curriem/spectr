@@ -116,19 +116,29 @@ class SimulateObservation:
         self.fplan = fplan[sort_inds]
         self.fplan_no_mol = fplan_no_mol[sort_inds]
 
-        normalization_coeff = np.max(self.fplan)
 
         self.fplan_fstar_only_mol = self.fplan / self.fstar - self.fplan_no_mol/self.fstar
 
         self.model_A = self.fplan / self.fstar
 
 
-
         if self.obs_type == "tran":
-            smart_tran = smart.readsmart.Trnst('./metadata/smart_runs/{}/tran/{}/{}_{}_{}_{}_{}cm.trnst'.format(star_name, molecule, star_name, molecule, band, wnmin, wnmax))
-            # DO THIS LATER :)
+            smart_tran = smart.readsmart.Trnst('./metadata/smart_runs/{}/tran/{}/{}_{}_{}_{}_{}cm.trnst'.format(self.star_name, self.molecule, self.star_name, self.molecule, self.band, self.wnmin, self.wnmax))
+            smart_tran_no_mol = smart.readsmart.Trnst(path+'/{}_{}_{}_{}_no_{}_{}_{}cm.trnst'.format(self.star_name, self.era, self.molecule, self.band, self.molecule, self.wnmin, self.wnmax))
 
-        #fplan_onlymol = fplan / fplan_no_mol * np.median(fplan_no_mol)
+            # get rid of SMART edge effects
+            lam_trnst, tdepth = edge_effects(smart_tran, "trnst", self.wlmin, self.wlmax)
+            lam_no_mol_trnst, tdepth_no_mol = edge_effects(smart_tran_no_mol, "trnst", self.wlmin, self.wlmax)
+
+            assert np.array_equal(lam_trnst, lam_no_mol_trnst)
+            
+            sort_inds_trnst = np.argsort(lam_trnst)
+            assert np.array_equal(self.lam, lam_trnst[sort_inds_trnst])
+            
+            self.tdepth = tdepth[sort_inds_trnst]
+            self.tdepth_no_mol = tdepth_no_mol[sort_inds_trnst]
+            self.tdepth_onlymol = self.tdepth / self.tdepth_no_mol * np.median(self.tdepth_no_mol)
+            
 
     def run(self, inclination, R_star, P_rot_star, P_orb, R_plan, P_rot_plan,
             a_plan, M_star, M_plan, RV_sys, RV_bary, texp, phases, dist):
@@ -150,12 +160,21 @@ class SimulateObservation:
             period of planet rotation [s]
         """
 
-        # Define two photon paths:
-        # Path 1: star to observer
-        # Path 2: star to planet to observer
+# =============================================================================
+#         # Define two photon paths:
+#         # Path 1: star to observer
+#         # Path 2: star to planet to observer
+# =============================================================================
         fstar_path1 = np.copy(self.fstar)
-        fstar_path2 = np.copy(self.fstar)
-        fplan_path2 = np.copy(self.fplan)
+        
+        if self.obs_type == "refl":
+            
+            fstar_path2 = np.copy(self.fstar)
+            fplan_path2 = np.copy(self.fplan)
+            
+        elif self.obs_type == "tran":
+            
+            tdepth_path2 = np.copy(self.tdepth)
 
         # assign units to system/orbital properties
         inclination = (inclination * unit.deg).to(unit.radian)
@@ -203,17 +222,23 @@ class SimulateObservation:
         ############### Step 1a rotationally broaden spectra ##################
         fstar_path1 = rotational_broadening(self.lam, fstar_path1, v_proj_star.value, 0.6)
 
-        fstar_path2 = rotational_broadening(self.lam, fstar_path2, v_proj_star.value, 0.6)
-        fplan_path2 = rotational_broadening(self.lam, fplan_path2, v_refl_plan.value, 0.6)
+        if self.obs_type == "refl":
+            fstar_path2 = rotational_broadening(self.lam, fstar_path2, v_proj_star.value, 0.6)
+            fplan_path2 = rotational_broadening(self.lam, fplan_path2, v_refl_plan.value, 0.6)
+        elif self.obs_type == "tran":
+            tdepth_path2 = rotational_broadening(self.lam, tdepth_path2, v_refl_plan.value, 0.6)
         ########################################################################
 
 
         ############### Step 1b doppler shift the spectra ##################
 
         fstar_path1_matrix = np.empty((norders, len(phases), len(self.fstar)))
-        fstar_path2_matrix = np.empty((norders, len(phases), len(self.fstar)))
-        fplan_path2_matrix = np.empty((norders, len(phases), len(self.fstar)))
-
+        
+        if self.obs_type == "refl":
+            fstar_path2_matrix = np.empty((norders, len(phases), len(self.fstar)))
+            fplan_path2_matrix = np.empty((norders, len(phases), len(self.fstar)))
+        elif self.obs_type == "tran":
+            tdepth_path2_matrix = np.empty((norders, len(phases), len(self.fstar)))
         total_plan_RV = np.empty(len(phases))
         star_RVs = np.empty(len(phases))
         for order in range(norders):
@@ -233,17 +258,24 @@ class SimulateObservation:
                 total_plan_RV[i] = (RV_sys + RV_bary + RV_p).value
 
                 fstar_path1_i = np.copy(fstar_path1)
-                fstar_path2_i = np.copy(fstar_path2)
-                fplan_path2_i = np.copy(fplan_path2)
-
                 fstar_path1_i = doppler_shift(self.lam, fstar_path1_i, (RV_sys + RV_bary + RV_s).value)
-                fstar_path2_i = doppler_shift(self.lam, fstar_path2_i, (RV_sys + RV_bary + RV_s).value)
-                fplan_path2_i = doppler_shift(self.lam, fplan_path2_i, (RV_sys + RV_bary + RV_p).value)
-
                 fstar_path1_matrix[order, i] = fstar_path1_i
-                fstar_path2_matrix[order, i] = fstar_path2_i
-                fplan_path2_matrix[order, i] = fplan_path2_i
+                
+                if self.obs_type == "refl":
+                    fstar_path2_i = np.copy(fstar_path2)
+                    fplan_path2_i = np.copy(fplan_path2)
 
+                    fstar_path2_i = doppler_shift(self.lam, fstar_path2_i, (RV_sys + RV_bary + RV_s).value)
+                    fplan_path2_i = doppler_shift(self.lam, fplan_path2_i, (RV_sys + RV_bary + RV_p).value)
+
+                    fstar_path2_matrix[order, i] = fstar_path2_i
+                    fplan_path2_matrix[order, i] = fplan_path2_i
+                
+                elif self.obs_type == "tran":
+                    tdepth_path2_i = np.copy(tdepth_path2)
+                    tdepth_path2_i = doppler_shift(self.lam, tdepth_path2_i, (RV_sys + RV_bary + RV_s).value)
+                    tdepth_path2_matrix[order, i] = tdepth_path2_i
+                    
         self.total_plan_RV = total_plan_RV
         self.star_RVs = star_RVs
         ########################################################################
@@ -278,8 +310,11 @@ class SimulateObservation:
 
         # add tellurics to spectra
         fstar_path1_matrix *= telluric_transmittance
-        fstar_path2_matrix *= telluric_transmittance
-        fplan_path2_matrix *= telluric_transmittance
+        if self.obs_type == "refl":
+            fstar_path2_matrix *= telluric_transmittance
+            fplan_path2_matrix *= telluric_transmittance
+        elif self.obs_type == "tran":
+            tdepth_path2_matrix *= telluric_transmittance
 
         ########################################################################
 
@@ -288,8 +323,12 @@ class SimulateObservation:
         for order in range(norders):
             for i in range(len(phases)):
                 fstar_path1_matrix[order, i] = instrumental_broadening(fstar_path1_matrix[order, i], self.lam, self.instrument_R)
-                fstar_path2_matrix[order, i] = instrumental_broadening(fstar_path2_matrix[order, i], self.lam, self.instrument_R)
-                fplan_path2_matrix[order, i] = instrumental_broadening(fplan_path2_matrix[order, i], self.lam, self.instrument_R)
+                if self.obs_type == "refl":
+                    fstar_path2_matrix[order, i] = instrumental_broadening(fstar_path2_matrix[order, i], self.lam, self.instrument_R)
+                    fplan_path2_matrix[order, i] = instrumental_broadening(fplan_path2_matrix[order, i], self.lam, self.instrument_R)
+                elif self.obs_type == "tran":
+                    tdepth_path2_matrix[order, i] = instrumental_broadening(tdepth_path2_matrix[order, i], self.lam, self.instrument_R)
+
 
                 # fstar_path1_matrix_no_T[order, i] = instrumental_broadening(fstar_path1_matrix_no_T[order, i], self.lam, self.instrument_R)
                 # fstar_path2_matrix_no_T[order, i] = instrumental_broadening(fstar_path2_matrix_no_T[order, i], self.lam, self.instrument_R)
@@ -304,9 +343,11 @@ class SimulateObservation:
 
 
         fstar_path1_instrument_matrix = np.empty((norders, len(phases), len(instrument_lam)))
-        fstar_path2_instrument_matrix = np.empty((norders, len(phases), len(instrument_lam)))
-        fplan_path2_instrument_matrix = np.empty((norders, len(phases), len(instrument_lam)))
-
+        if self.obs_type == "refl":
+            fstar_path2_instrument_matrix = np.empty((norders, len(phases), len(instrument_lam)))
+            fplan_path2_instrument_matrix = np.empty((norders, len(phases), len(instrument_lam)))
+        elif self.obs_type == "tran":
+            tdepth_path2_instrument_matrix = np.empty((norders, len(phases), len(instrument_lam)))
         # fstar_path1_instrument_matrix_no_T = np.empty((norders, len(phases), len(instrument_lam)))
         # fstar_path2_instrument_matrix_no_T = np.empty((norders, len(phases), len(instrument_lam)))
         # fplan_path2_instrument_matrix_no_T = np.empty((norders, len(phases), len(instrument_lam)))
@@ -314,9 +355,11 @@ class SimulateObservation:
         for order in range(norders):
             for i in range(len(phases)):
                 fstar_path1_instrument_matrix[order, i] = bin_to_instrument_lam(fstar_path1_matrix[order, i], self.lam, instrument_lam, instrument_dlam)
-                fstar_path2_instrument_matrix[order, i] = bin_to_instrument_lam(fstar_path1_matrix[order, i], self.lam, instrument_lam, instrument_dlam)
-                fplan_path2_instrument_matrix[order, i] = bin_to_instrument_lam(fplan_path2_matrix[order, i], self.lam, instrument_lam, instrument_dlam)
-
+                if self.obs_type == "refl":
+                    fstar_path2_instrument_matrix[order, i] = bin_to_instrument_lam(fstar_path1_matrix[order, i], self.lam, instrument_lam, instrument_dlam)
+                    fplan_path2_instrument_matrix[order, i] = bin_to_instrument_lam(fplan_path2_matrix[order, i], self.lam, instrument_lam, instrument_dlam)
+                elif self.obs_type == "tran":
+                    tdepth_path2_instrument_matrix[order, i] = bin_to_instrument_lam(tdepth_path2_matrix[order, i],  self.lam, instrument_lam, instrument_dlam)
                 # fstar_path1_instrument_matrix_no_T[order, i] = bin_to_instrument_lam(fstar_path1_matrix_no_T[order, i], self.lam, instrument_lam, instrument_dlam)
                 # fstar_path2_instrument_matrix_no_T[order, i] = bin_to_instrument_lam(fstar_path1_matrix_no_T[order, i], self.lam, instrument_lam, instrument_dlam)
                 # fplan_path2_instrument_matrix_no_T[order, i] = bin_to_instrument_lam(fplan_path2_matrix_no_T[order, i], self.lam, instrument_lam, instrument_dlam)
@@ -326,7 +369,8 @@ class SimulateObservation:
         ############### Step 1f calculate fluxes ################
 
         Fs_observer_matrix = np.empty_like(fstar_path1_instrument_matrix)
-        Fp_observer_matrix = np.empty_like(fstar_path1_instrument_matrix)
+        if self.obs_type == "refl":
+            Fp_observer_matrix = np.empty_like(fstar_path1_instrument_matrix)
 
         # Fs_observer_matrix_no_T = np.empty_like(fstar_path1_instrument_matrix)
         # Fp_observer_matrix_no_T = np.empty_like(fstar_path1_instrument_matrix)
@@ -334,20 +378,23 @@ class SimulateObservation:
         for order in range(norders):
             for i in range(len(phases)):
                 Fs_observer_matrix[order, i] = Fstar(fstar_path1_instrument_matrix[order, i], R_star, a_plan, dist)
-                Fp_observer_matrix[order, i] = Fplan(fplan_path2_instrument_matrix[order, i], R_plan, dist)
+                if self.obs_type == "refl":
+                    Fp_observer_matrix[order, i] = Fplan(fplan_path2_instrument_matrix[order, i], R_plan, dist)
 
                 # Fs_observer_matrix_no_T[order, i] = Fstar(fstar_path1_instrument_matrix_no_T[order, i], R_star, a_plan, dist)
                 # Fp_observer_matrix_no_T[order, i] = Fplan(fplan_path2_instrument_matrix_no_T[order, i], R_plan, dist)
         ########################################################################
 
         ############### Step 1g planet/star photon counts ################
-
-        self.Fp_observer_matrix = Fp_observer_matrix
+        if self.obs_type == "refl":
+            self.Fp_observer_matrix = Fp_observer_matrix
+            
         self.Fs_observer_matrix = Fs_observer_matrix
 
 
         cs_matrix = np.empty_like(Fp_observer_matrix)
-        cp_matrix = np.empty_like(Fp_observer_matrix)
+        if self.obs_type == "refl":
+            cp_matrix = np.empty_like(Fp_observer_matrix)
 
         # cs_matrix_no_T = np.empty_like(Fp_observer_matrix_no_T)
         # cp_matrix_no_T = np.empty_like(Fp_observer_matrix_no_T)
@@ -355,7 +402,8 @@ class SimulateObservation:
         for order in range(norders):
             for i in range(len(phases)):
                 cs_matrix[order, i] = cstar(q, fpa, T, instrument_lam, instrument_dlam, Fs_observer_matrix[order, i], D)
-                cp_matrix[order, i] = cplan(q, fpa, T, instrument_lam, instrument_dlam, Fp_observer_matrix[order, i], D)
+                if self.obs_type == "refl":
+                    cp_matrix[order, i] = cplan(q, fpa, T, instrument_lam, instrument_dlam, Fp_observer_matrix[order, i], D)
 
                 # cs_matrix_no_T[order, i] = cstar(q, fpa, T, instrument_lam, instrument_dlam, Fs_observer_matrix_no_T[order, i], D)
                 # cp_matrix_no_T[order, i] = cplan(q, fpa, T, instrument_lam, instrument_dlam, Fp_observer_matrix_no_T[order, i], D)
@@ -396,63 +444,85 @@ class SimulateObservation:
         background_per_exposure = csky*texp + cdark*texp + read_noise_per_exposure
         ########################################################################
 
-        ############### Step 1i mask star light with coronagraph ################
+        if self.obs_type == "refl":
+            ############### Step 1i mask star light with coronagraph ################
+    
+            coronagraph_contrast = 1e-5
+    
+            cspeckle_matrix = np.copy(cs_matrix)
+            # cspeckle_matrix_no_T = np.copy(cs_matrix_no_T)
+            for order in range(norders):
+                for i in range(len(phases)):
+                    cspeckle_matrix[order, i,] *= coronagraph_contrast
+                    # cspeckle_matrix_no_T[order, i,] *= coronagraph_contrast
 
-        coronagraph_contrast = 1e-5
-
-        cspeckle_matrix = np.copy(cs_matrix)
-        # cspeckle_matrix_no_T = np.copy(cs_matrix_no_T)
-        for order in range(norders):
-            for i in range(len(phases)):
-                cspeckle_matrix[order, i,] *= coronagraph_contrast
-                # cspeckle_matrix_no_T[order, i,] *= coronagraph_contrast
 
 
-
-
-        ################### interpolate model A onto instrument wl grid ########
-
-        # instrumental broadening
-        self.model_A = instrumental_broadening(self.model_A, self.lam, self.instrument_R)
-
-        # interpolate onto instrument wl grid
-        self.model_A = bin_to_instrument_lam(self.model_A, self.lam, instrument_lam, instrument_dlam)
+        if self.obs_type == "refl":
+            ################### interpolate model A onto instrument wl grid ########
+    
+            # instrumental broadening
+            self.model_A = instrumental_broadening(self.model_A, self.lam, self.instrument_R)
+    
+            # interpolate onto instrument wl grid
+            self.model_A = bin_to_instrument_lam(self.model_A, self.lam, instrument_lam, instrument_dlam)
+        
+        
 
 
 
         ############### Step 1j construct simulated dataset ################
 
-        simulated_data = np.empty_like(cspeckle_matrix)
-        simulated_data_no_noise = np.empty_like(cspeckle_matrix)
-        simulated_data_no_tellurics = np.empty_like(cspeckle_matrix)
+        simulated_data = np.empty_like(cs_matrix)
+        simulated_data_no_noise = np.empty_like(cs_matrix)
+        simulated_data_no_tellurics = np.empty_like(cs_matrix)
         # random numbers to simulate poisson noise
 
-        signal_matrix = np.empty_like(cspeckle_matrix)
+        signal_matrix = np.empty_like(cs_matrix)
         # signal_matrix_no_T = np.empty_like(cspeckle_matrix)
-        noise_matrix = np.empty_like(cspeckle_matrix)
+        noise_matrix = np.empty_like(cs_matrix)
         # noise_matrix_no_T = np.empty_like(cspeckle_matrix)
-        SNR_matrix = np.empty_like(cspeckle_matrix)
-
-        planet_matrix = np.empty_like(cspeckle_matrix)
-        star_matrix = np.empty_like(cspeckle_matrix)
+        SNR_matrix = np.empty_like(cs_matrix)
+        if self.obs_type == "refl":
+            planet_matrix = np.empty_like(cs_matrix)
+        star_matrix = np.empty_like(cs_matrix)
 
         # SNR_no_T_matrix = np.empty_like(cspeckle_matrix)
         for order in range(norders):
             rand_nums = np.random.randn(len(phases), len(instrument_lam))
 
-            signal = cp_matrix[order]*texp + cspeckle_matrix[order]*texp
-            signal_matrix[order,] = signal
-            planet_matrix[order,] = cp_matrix[order]*texp
-            star_matrix[order,] = cspeckle_matrix[order]*texp
 
-            noise = np.sqrt(signal + background_per_exposure*np.ones_like(signal))
+            if self.obs_type == "refl":
+                signal = cp_matrix[order]*texp + cspeckle_matrix[order]*texp
+                planet_matrix[order,] = cp_matrix[order]*texp
+                star_matrix[order,] = cspeckle_matrix[order]*texp
+                
+                noise = np.sqrt(signal + background_per_exposure*np.ones_like(signal))
+            elif self.obs_type == "tran":
+                star_signal = cs_matrix[order]*texp * ( 1 - self.tdepth)
+                star_matrix[order,] = cs_matrix[order]*texp
+                
+                signal = tdepth_path2_instrument_matrix[order,]
+                
+                noise = np.sqrt(star_signal + background_per_exposure*np.ones_like(signal))
+                
+                
+            signal_matrix[order,] = signal
             noise_matrix[order,] = noise
 
-            SNR_matrix[order,] = cp_matrix[order]*texp  / noise_matrix[order,]
+            if self.obs_type == "refl":
+                SNR_matrix[order,] = cp_matrix[order]*texp  / noise_matrix[order,]
 
-            simulated_data_no_tellurics[order,] = self.model_A + self.model_A/SNR_matrix[order,] * rand_nums
+                #simulated_data_no_tellurics[order,] = self.model_A + self.model_A/SNR_matrix[order,] * rand_nums
+                simulated_data[order] = signal + noise * rand_nums
+                simulated_data_no_noise[order] = signal
 
-
+                #simulated_data_no_tellurics[order] = cp_matrix[order]*texp + noise
+                
+            elif self.obs_type == "tran":
+                SNR_matrix[order,] = (cs_matrix[order]*texp * self.tdepth)  / noise_matrix[order,]
+                
+                simulated_data[order] = signal + noise 
 
             # signal_no_T = cp_matrix_no_T[order]*texp
             # signal_matrix_no_T[order,] = signal_no_T
@@ -462,10 +532,7 @@ class SimulateObservation:
             #
             # SNR_matrix_no_T[order,] = signal_matrix_no_T[order,] / noise_matrix_no_T[order,]
 
-            simulated_data[order] = signal + noise
-            simulated_data_no_noise[order] = signal
-
-            simulated_data_no_tellurics[order] = cp_matrix[order]*texp + noise
+            
 
 
         #self.signal_matrix_no_T = signal_matrix_no_T
