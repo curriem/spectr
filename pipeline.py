@@ -123,7 +123,7 @@ class SimulateObservation:
 
 
         if self.obs_type == "tran":
-            smart_tran = smart.readsmart.Trnst('./metadata/smart_runs/{}/tran/{}/{}_{}_{}_{}_{}cm.trnst'.format(self.star_name, self.molecule, self.star_name, self.molecule, self.band, self.wnmin, self.wnmax))
+            smart_tran = smart.readsmart.Trnst(path+'/{}/{}_{}_{}_{}_{}cm.trnst'.format(self.star_name, self.molecule, self.star_name, self.molecule, self.band, self.wnmin, self.wnmax))
             smart_tran_no_mol = smart.readsmart.Trnst(path+'/{}_{}_{}_{}_no_{}_{}_{}cm.trnst'.format(self.star_name, self.era, self.molecule, self.band, self.molecule, self.wnmin, self.wnmax))
 
             # get rid of SMART edge effects
@@ -522,7 +522,7 @@ class SimulateObservation:
             elif self.obs_type == "tran":
                 SNR_matrix[order,] = (cs_matrix[order]*texp * self.tdepth)  / noise_matrix[order,]
                 
-                simulated_data[order] = signal + noise 
+                simulated_data[order] = signal + noise * rand_nums
 
             # signal_no_T = cp_matrix_no_T[order]*texp
             # signal_matrix_no_T[order,] = signal_no_T
