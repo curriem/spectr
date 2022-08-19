@@ -541,7 +541,8 @@ class SimulateObservation:
         self.background_matrix = background_per_exposure*np.ones_like(signal_matrix)
         self.noise_matrix = noise_matrix
         self.SNR_matrix = SNR_matrix
-        self.planet_matrix = planet_matrix
+        if self.obs_type == "refl":
+            self.planet_matrix = planet_matrix
         self.star_matrix = star_matrix
 
 
