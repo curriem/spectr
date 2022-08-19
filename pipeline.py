@@ -500,7 +500,7 @@ class SimulateObservation:
                 
                 noise = np.sqrt(signal + background_per_exposure*np.ones_like(signal))
             elif self.obs_type == "tran":
-                star_signal = cs_matrix[order]*texp * ( 1 - self.tdepth_path2_instrument_matrix)
+                star_signal = cs_matrix[order]*texp * ( 1 - tdepth_path2_instrument_matrix)
                 star_matrix[order,] = cs_matrix[order]*texp
                 
                 signal = tdepth_path2_instrument_matrix[order,]
