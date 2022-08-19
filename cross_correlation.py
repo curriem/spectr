@@ -128,7 +128,6 @@ def cc_at_vrest(wl_data, spec_data, wl_model, spec_model, kp, ph, rvtot, ncc, hi
     cs = splrep(wl_model, spec_model, s=0)
 
     for j in range(nph):
-
         #print(cs)
         RV_planet = calc_RVp(kp, ph[j], ecc=0, w_arg_peri=90)
         lagTemp =  rv_grid  + rvtot[j] + RV_planet # kp * np.sin(2*np.pi*ph[j])

@@ -610,3 +610,45 @@ class CrossCorrelation:
 
         self.d_sig = d_sig
         return d_sig
+
+class CompareCCFs:
+
+    def __init__(self, ccf_real, ccf_inj, rv_grid, trail_bound=25):
+        self.ccf_real = ccf_real
+        self.ccf_inj = ccf_inj
+        self.rv_grid = rv_grid
+        self.trail_bound = trail_bound
+
+    def compare(self):
+        self.ccf_model = self.ccf_inj - self.ccf_real
+
+        iout = np.abs(self.rv_grid) >= self.trail_bound         # boolean
+        nout = iout.sum()               # how many 'trues'
+        iin = np.abs(self.rv_grid) < self.trail_bound           # boolean
+        nin = iin.sum()                 # how many 'falses'
+
+        # Scale the noiseless model CCF to the real CCF - Need to impose slope > 0 (correlation)
+        # so the absolute value of the slope is taken. This means that an anti-correlation
+        # (negative slope) will increase the chi-square of the residuals rather than decrease
+        # it, resulting into a delta(sigma) value < 0.
+        coef = np.polyfit(self.ccf_model, self.ccf_real, 1)
+        #        if coef[0] < 0: coef[0] = 0
+        coef[0] = np.abs(coef[0])
+        self.ccf_fit = coef[0]*self.ccf_model + coef[1]
+
+        # Computing the residual cross correlation function
+        self.ccf_res = self.ccf_real - self.ccf_fit
+
+        # Doing statistical tests on residual cross correlation function.
+        # Note that dof decreases by 2 because we are fitting an apmplitude and
+        # offset of the model CCF.
+        var_ccf_res = np.std(self.ccf_res[iout])**2   # CCF variance (away from peak)
+        chi2_ccf_res = (self.ccf_res[iin]**2).sum() / var_ccf_res
+        sigma_ccf_res = stats.norm.isf(stats.chi2.sf(chi2_ccf_res,nin-3)/2)
+    
+        ccf_real_significance_chi2 = calc_significance_chi2(self.ccf_real, self.rv_grid)
+
+        d_sig = ccf_real_significance_chi2 - sigma_ccf_res
+
+        self.dsig = d_sig
+
