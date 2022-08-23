@@ -505,7 +505,7 @@ class SimulateObservation:
                 
                 signal = tdepth_path2_instrument_matrix[order,]
                 
-                noise = np.sqrt(star_signal + background_per_exposure*np.ones_like(signal))
+                noise = np.sqrt(star_signal + background_per_exposure*np.ones_like(signal)) / (cs_matrix[order]*texp)
                 
                 
             signal_matrix[order,] = signal
@@ -524,6 +524,7 @@ class SimulateObservation:
                 SNR_matrix[order,] = (cs_matrix[order]*texp * tdepth_path2_instrument_matrix[order])  / noise_matrix[order,]
                 
                 simulated_data[order] = signal + noise * rand_nums
+                simulated_data_no_noise[order] = signal
 
             # signal_no_T = cp_matrix_no_T[order]*texp
             # signal_matrix_no_T[order,] = signal_no_T
