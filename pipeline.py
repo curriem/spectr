@@ -273,7 +273,7 @@ class SimulateObservation:
                 
                 elif self.obs_type == "tran":
                     tdepth_path2_i = np.copy(tdepth_path2)
-                    tdepth_path2_i = doppler_shift(self.lam, tdepth_path2_i, (RV_sys + RV_bary + RV_s).value)
+                    tdepth_path2_i = doppler_shift(self.lam, tdepth_path2_i, (RV_sys + RV_bary + RV_p).value)
                     tdepth_path2_matrix[order, i] = tdepth_path2_i
                     
         self.total_plan_RV = total_plan_RV
