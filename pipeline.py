@@ -254,6 +254,7 @@ class SimulateObservation:
                     print("star RV:", RV_s)
                     print("planet RV:", RV_p)
                     print("total plan RV shift:", RV_sys + RV_bary + RV_p)
+                    print("total star RV shift:", RV_sys + RV_bary + RV_s)
                     print("########################\n")
                 total_plan_RV[i] = (RV_sys + RV_bary + RV_p).value
 
@@ -313,8 +314,10 @@ class SimulateObservation:
         if self.obs_type == "refl":
             fstar_path2_matrix *= telluric_transmittance
             fplan_path2_matrix *= telluric_transmittance
-        elif self.obs_type == "tran":
-            tdepth_path2_matrix *= telluric_transmittance
+# =============================================================================
+#         elif self.obs_type == "tran":
+#             tdepth_path2_matrix *= telluric_transmittance
+# =============================================================================
 
         ########################################################################
 
@@ -490,8 +493,7 @@ class SimulateObservation:
 
         # SNR_no_T_matrix = np.empty_like(cspeckle_matrix)
         for order in range(norders):
-            rand_nums = np.random.randn(len(phases), len(instrument_lam))
-
+            rand_nums = np.random.randn(len(phases), len(instrument_lam))            
 
             if self.obs_type == "refl":
                 signal = cp_matrix[order]*texp + cspeckle_matrix[order]*texp
@@ -500,12 +502,13 @@ class SimulateObservation:
                 
                 noise = np.sqrt(signal + background_per_exposure*np.ones_like(signal))
             elif self.obs_type == "tran":
-                star_signal = cs_matrix[order]*texp * ( 1 - tdepth_path2_instrument_matrix[order])
+                signal = cs_matrix[order]*texp * ( 1 - tdepth_path2_instrument_matrix[order])
                 star_matrix[order,] = cs_matrix[order]*texp
                 
-                signal = tdepth_path2_instrument_matrix[order,]
+                #signal = tdepth_path2_instrument_matrix[order,]
+                #signal  star_signal
                 
-                noise = np.sqrt(star_signal + background_per_exposure*np.ones_like(signal)) / (cs_matrix[order]*texp)
+                noise = np.sqrt(signal + background_per_exposure*np.ones_like(signal)) 
                 
                 
             signal_matrix[order,] = signal
