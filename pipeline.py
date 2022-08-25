@@ -24,7 +24,7 @@ from .cross_correlation import *
 
 class SimulateObservation:
 
-    def __init__(self, star_name, era, molecule, band, obs_type, instrument_R=1e5, verbose=False):#, telescope_name, distance,
+    def __init__(self, star_name, era, molecule, band, obs_type, instrument_R=1e5, verbose=False, noise_scalar=1.):#, telescope_name, distance,
                  #Vsystem, Vbary):
 
         self.star_name = star_name
@@ -34,6 +34,7 @@ class SimulateObservation:
         self.obs_type = obs_type
         self.instrument_R = instrument_R
         self.verbose = verbose
+        self.noise_scalar = noise_scalar
         #self.telescope_name = telescope_name
         #self.distance = distance
         #self.Vsystem = Vsystem
@@ -508,7 +509,7 @@ class SimulateObservation:
                 #signal = tdepth_path2_instrument_matrix[order,]
                 #signal  star_signal
                 
-                noise = np.sqrt(signal + background_per_exposure*np.ones_like(signal)) 
+                noise = self.noise_scalar * np.sqrt(signal + background_per_exposure*np.ones_like(signal)) 
                 
                 
             signal_matrix[order,] = signal
