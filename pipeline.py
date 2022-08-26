@@ -481,6 +481,8 @@ class SimulateObservation:
         simulated_data = np.empty_like(cs_matrix)
         simulated_data_no_noise = np.empty_like(cs_matrix)
         simulated_data_no_tellurics = np.empty_like(cs_matrix)
+        if self.obs_type == "tran":
+            simulated_data_oot = np.empty_like(cs_matrix)
         # random numbers to simulate poisson noise
 
         signal_matrix = np.empty_like(cs_matrix)
@@ -504,12 +506,15 @@ class SimulateObservation:
                 noise = np.sqrt(signal + background_per_exposure*np.ones_like(signal))
             elif self.obs_type == "tran":
                 signal = cs_matrix[order]*texp * ( 1 - tdepth_path2_instrument_matrix[order])
+                signal_oot = cs_matrix[order]*texp
                 star_matrix[order,] = cs_matrix[order]*texp
                 
                 #signal = tdepth_path2_instrument_matrix[order,]
                 #signal  star_signal
                 
                 noise = self.noise_scalar * np.sqrt(signal + background_per_exposure*np.ones_like(signal)) 
+                
+                noise_oot = self.noise_scalar * np.sqrt(signal_oot + background_per_exposure*np.ones_like(signal_oot)) 
                 
                 
             signal_matrix[order,] = signal
@@ -528,7 +533,11 @@ class SimulateObservation:
                 SNR_matrix[order,] = (cs_matrix[order]*texp * tdepth_path2_instrument_matrix[order])  / noise_matrix[order,]
                 
                 simulated_data[order] = signal + noise * rand_nums
+                
                 simulated_data_no_noise[order] = signal
+                
+                rand_nums_oot = np.random.randn(len(phases), len(instrument_lam))     
+                simulated_data_oot[order] = signal_oot + noise_oot * rand_nums_oot
 
             # signal_no_T = cp_matrix_no_T[order]*texp
             # signal_matrix_no_T[order,] = signal_no_T
@@ -561,6 +570,9 @@ class SimulateObservation:
         self.simulated_data_no_tellurics = simulated_data_no_tellurics[:, :, naninds]
         self.instrument_lam = np.expand_dims(instrument_lam[naninds], axis=0)
         self.instrument_dlam = np.expand_dims(instrument_dlam[naninds], axis=0)
+        
+        if self.obs_type == "tran":
+            self.simulated_data_oot = simulated_data_oot[:, :, naninds]
 
     def new_observation(self):
         new_rand_nums = np.random.randn(self.signal_matrix.shape[0], self.signal_matrix.shape[1], self.signal_matrix.shape[2])
