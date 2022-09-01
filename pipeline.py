@@ -21,6 +21,8 @@ from .orbital_properties import *
 from .photon_counts import *
 from .retrieve_sky import *
 from .cross_correlation import *
+from scipy.interpolate import splrep, splev
+
 
 class SimulateObservation:
 
@@ -478,11 +480,16 @@ class SimulateObservation:
 
         ############### Step 1j construct simulated dataset ################
 
-        simulated_data = np.empty_like(cs_matrix)
-        simulated_data_no_noise = np.empty_like(cs_matrix)
-        simulated_data_no_tellurics = np.empty_like(cs_matrix)
+        naninds = ~np.isnan(cs_matrix[0, 0, :])
+        self.data_naninds = naninds
+        
+        simulated_data = np.empty_like(cs_matrix[:, :, naninds])
+        simulated_data_no_noise = np.empty_like(cs_matrix[:, :, naninds])
+        simulated_data_no_tellurics = np.empty_like(cs_matrix[:, :, naninds])
         if self.obs_type == "tran":
-            simulated_data_oot = np.empty_like(cs_matrix)
+            simulated_data_oot = np.empty_like(cs_matrix[:, :, naninds])
+            simulated_data_oot_no_noise = np.empty_like(cs_matrix[:, :, naninds])
+
         # random numbers to simulate poisson noise
 
         signal_matrix = np.empty_like(cs_matrix)
@@ -516,10 +523,17 @@ class SimulateObservation:
                 
                 noise_oot = self.noise_scalar * np.sqrt(signal_oot + background_per_exposure*np.ones_like(signal_oot)) 
                 
+                photons = signal + background_per_exposure*np.ones_like(signal)
+                photons_oot = signal_oot + background_per_exposure*np.ones_like(signal)
+                self.photons = photons[:, naninds]
+                self.photons_oot = photons_oot[:, naninds]
+                
                 
             signal_matrix[order,] = signal
             noise_matrix[order,] = noise
-
+            
+            
+            
             if self.obs_type == "refl":
                 SNR_matrix[order,] = cp_matrix[order]*texp  / noise_matrix[order,]
 
@@ -532,12 +546,17 @@ class SimulateObservation:
             elif self.obs_type == "tran":
                 SNR_matrix[order,] = (cs_matrix[order]*texp * tdepth_path2_instrument_matrix[order])  / noise_matrix[order,]
                 
-                simulated_data[order] = signal + noise * rand_nums
+                #simulated_data[order] = signal + noise * rand_nums
                 
-                simulated_data_no_noise[order] = signal
+                simulated_data_no_noise[order] = signal[:, naninds]
                 
-                rand_nums_oot = np.random.randn(len(phases), len(instrument_lam))     
-                simulated_data_oot[order] = signal_oot + noise_oot * rand_nums_oot
+                simulated_data_oot_no_noise[order] = signal_oot[:, naninds]
+                
+                #rand_nums_oot = np.random.randn(len(phases), len(instrument_lam))     
+                #simulated_data_oot[order] = signal_oot + noise_oot * rand_nums_oot
+                
+                simulated_data[order] = np.random.poisson(photons[:, naninds])
+                simulated_data_oot[order] = np.random.poisson(photons_oot[:, naninds])
 
             # signal_no_T = cp_matrix_no_T[order]*texp
             # signal_matrix_no_T[order,] = signal_no_T
@@ -560,19 +579,20 @@ class SimulateObservation:
         self.star_matrix = star_matrix
 
 
-        naninds = ~np.isnan(simulated_data[0, 0, :])
-
-        self.data_naninds = naninds
+        
 
 
-        self.simulated_data = simulated_data[:, :, naninds]
-        self.simulated_data_no_noise = simulated_data_no_noise[:, :, naninds]
-        self.simulated_data_no_tellurics = simulated_data_no_tellurics[:, :, naninds]
+
+        self.simulated_data = simulated_data
+        self.simulated_data_no_noise = simulated_data_no_noise
+        self.simulated_data_no_tellurics = simulated_data_no_tellurics
         self.instrument_lam = np.expand_dims(instrument_lam[naninds], axis=0)
         self.instrument_dlam = np.expand_dims(instrument_dlam[naninds], axis=0)
         
         if self.obs_type == "tran":
-            self.simulated_data_oot = simulated_data_oot[:, :, naninds]
+            self.simulated_data_oot = simulated_data_oot
+            self.simulated_data_oot_no_noise = simulated_data_oot_no_noise
+
 
     def new_observation(self):
         new_rand_nums = np.random.randn(self.signal_matrix.shape[0], self.signal_matrix.shape[1], self.signal_matrix.shape[2])
@@ -637,9 +657,52 @@ class CrossCorrelation:
 
     def run(self):
 
+        
+        def hipass_data(arr):
+            nbin = 100
+            norders, nph, nlam = arr.shape
+        
+        
+            bins = int(nlam / nbin)
+            xb = np.arange(nbin)*bins + bins/2.0
+            yb = np.zeros(nbin+2)
+            xb = np.append(np.append(0,xb),nlam-1)
+            for io in range(norders):
+                for j in range(nph):
+                    for ib in range(nbin):
+                        imin = int(ib*bins)
+                        imax = int(imin + bins)
+                        yb[ib+1] = np.mean(arr[io,j,imin:imax])
+                        yb[0] = arr[io, j, 0]
+                        yb[-1] = arr[io, j, -1]
+                    cs_bin = splrep(xb,yb,s=0.0)
+                    fit = splev(np.arange(nlam),cs_bin,der=0)
+                    arr[io,j,] -= fit
+                    
+            return arr
+
+        def hipass_model(arr):
+            nbin = 100
+            nlam = len(arr)
+            bins = int(nlam / nbin)
+            xb = np.arange(nbin)*bins + bins/2.0
+            yb = np.zeros(nbin+2)
+            xb = np.append(np.append(0,xb),nlam-1)
+            for ib in range(nbin):
+                imin = int(ib*bins)
+                imax = int(imin + bins)
+                yb[ib+1] = np.mean(arr[imin:imax])
+                yb[0] = arr[0]
+                yb[-1] = arr[-1]
+            cs_bin = splrep(xb,yb,s=0.0)
+            fit = splev(np.arange(nlam),cs_bin,der=0)
+            arr -= fit
+            return arr
+        
+        
         # ccf on real data
-        ccf, rv_grid = cc_at_vrest(self.wl_data[:, 10:-10], self.spec_data[:, :, 10:-10], self.wl_model, # had to include the wl buffer because funky interpolation things happen on the edges when you inject the model
-                                   self.spec_model, self.kp, self.ph,
+        ccf, rv_grid = cc_at_vrest(self.wl_data[:, 10:-10], hipass_data(self.spec_data[:, :, 10:-10]), self.wl_model, # had to include the wl buffer because funky interpolation things happen on the edges when you inject the model
+                                   hipass_model(self.spec_model), self.kp, self.ph,
                                    self.rvtot, self.ncc)
                                   # hipass=False)
 
