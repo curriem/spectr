@@ -140,7 +140,7 @@ class SimulateObservation:
             
             self.tdepth = tdepth[sort_inds_trnst]
             self.tdepth_no_mol = tdepth_no_mol[sort_inds_trnst]
-            self.tdepth_onlymol = self.tdepth / self.tdepth_no_mol * np.median(self.tdepth_no_mol)
+            self.tdepth_onlymol = self.tdepth - self.tdepth_no_mol
             
 
     def run(self, inclination, R_star, P_rot_star, P_orb, R_plan, P_rot_plan,
@@ -307,6 +307,7 @@ class SimulateObservation:
         # interpolate onto spectrum wl grid
         f = interp1d(skycalc.lam, skycalc.trans, fill_value = "extrapolate")
         telluric_transmittance = f(self.lam)
+        
 
         # fstar_path1_matrix_no_T = np.copy(fstar_path1_matrix)
         # fstar_path2_matrix_no_T = np.copy(fstar_path2_matrix)
@@ -511,61 +512,37 @@ class SimulateObservation:
                 star_matrix[order,] = cspeckle_matrix[order]*texp
                 
                 noise = np.sqrt(signal + background_per_exposure*np.ones_like(signal))
-            elif self.obs_type == "tran":
-                signal = cs_matrix[order]*texp * ( 1 - tdepth_path2_instrument_matrix[order])
-                signal_oot = cs_matrix[order]*texp
-                star_matrix[order,] = cs_matrix[order]*texp
                 
-                #signal = tdepth_path2_instrument_matrix[order,]
-                #signal  star_signal
-                
-                noise = self.noise_scalar * np.sqrt(signal + background_per_exposure*np.ones_like(signal)) 
-                
-                noise_oot = self.noise_scalar * np.sqrt(signal_oot + background_per_exposure*np.ones_like(signal_oot)) 
-                
-                photons = signal + background_per_exposure*np.ones_like(signal)
-                photons_oot = signal_oot + background_per_exposure*np.ones_like(signal)
-                self.photons = photons[:, naninds]
-                self.photons_oot = photons_oot[:, naninds]
-                
-                
-            signal_matrix[order,] = signal
-            noise_matrix[order,] = noise
-            
-            
-            
-            if self.obs_type == "refl":
                 SNR_matrix[order,] = cp_matrix[order]*texp  / noise_matrix[order,]
 
                 #simulated_data_no_tellurics[order,] = self.model_A + self.model_A/SNR_matrix[order,] * rand_nums
                 simulated_data[order] = signal + noise * rand_nums
                 simulated_data_no_noise[order] = signal
-
-                #simulated_data_no_tellurics[order] = cp_matrix[order]*texp + noise
                 
             elif self.obs_type == "tran":
-                SNR_matrix[order,] = (cs_matrix[order]*texp * tdepth_path2_instrument_matrix[order])  / noise_matrix[order,]
+                signal = cs_matrix[order]*texp * (1 - tdepth_path2_instrument_matrix[order])
+                signal_oot = cs_matrix[order]*texp
+                star_matrix[order,] = cs_matrix[order]*texp
                 
-                #simulated_data[order] = signal + noise * rand_nums
+                noise = self.noise_scalar * np.sqrt(signal + background_per_exposure*np.ones_like(signal)) 
+                noise_oot = self.noise_scalar * np.sqrt(signal_oot + background_per_exposure*np.ones_like(signal_oot)) 
                 
+                SNR_matrix[order,] = signal_matrix[order,]  / noise_matrix[order,]
+                
+                simulated_data[order] = signal[:, naninds]  + rand_nums[:, naninds]*noise[:, naninds]
                 simulated_data_no_noise[order] = signal[:, naninds]
+                
+                
+                rand_nums_oot = np.random.randn(len(phases), len(instrument_lam))     
+                simulated_data_oot[order] = signal_oot[:, naninds] + rand_nums_oot[:, naninds]*noise_oot[:, naninds]
                 
                 simulated_data_oot_no_noise[order] = signal_oot[:, naninds]
                 
-                #rand_nums_oot = np.random.randn(len(phases), len(instrument_lam))     
-                #simulated_data_oot[order] = signal_oot + noise_oot * rand_nums_oot
                 
-                simulated_data[order] = np.random.poisson(photons[:, naninds])
-                simulated_data_oot[order] = np.random.poisson(photons_oot[:, naninds])
-
-            # signal_no_T = cp_matrix_no_T[order]*texp
-            # signal_matrix_no_T[order,] = signal_no_T
-            #
-            # noise_no_T = np.sqrt(signal_no_T + cspeckle_matrix_no_T[order]*texp + background_per_exposure*np.ones_like(signal))
-            # noise_matrix_no_T[order,] = np.sqrt(signal_no_T + background_per_exposure*np.ones_like(signal))
-            #
-            # SNR_matrix_no_T[order,] = signal_matrix_no_T[order,] / noise_matrix_no_T[order,]
-
+                
+            signal_matrix[order,] = signal
+            noise_matrix[order,] = noise
+            
             
 
 
@@ -579,7 +556,10 @@ class SimulateObservation:
         self.star_matrix = star_matrix
 
 
-        
+        self.tdepth_path2_instrument_matrix = tdepth_path2_instrument_matrix
+        tellurics_instrument = instrumental_broadening(telluric_transmittance, self.lam, self.instrument_R)
+        tellurics_instrument =  bin_to_instrument_lam(telluric_transmittance, self.lam, instrument_lam, instrument_dlam)
+        self.tellurics = tellurics_instrument
 
 
 
@@ -658,7 +638,7 @@ class CrossCorrelation:
     def run(self):
 
         
-        def hipass_data(arr):
+        def run_hipass_data(arr):
             nbin = 100
             norders, nph, nlam = arr.shape
         
@@ -672,7 +652,7 @@ class CrossCorrelation:
                     for ib in range(nbin):
                         imin = int(ib*bins)
                         imax = int(imin + bins)
-                        yb[ib+1] = np.mean(arr[io,j,imin:imax])
+                        yb[ib+1] = np.nanmean(arr[io,j,imin:imax])
                         yb[0] = arr[io, j, 0]
                         yb[-1] = arr[io, j, -1]
                     cs_bin = splrep(xb,yb,s=0.0)
@@ -681,7 +661,7 @@ class CrossCorrelation:
                     
             return arr
 
-        def hipass_model(arr):
+        def run_hipass_model(arr):
             nbin = 100
             nlam = len(arr)
             bins = int(nlam / nbin)
@@ -700,9 +680,15 @@ class CrossCorrelation:
             return arr
         
         
+        hipass_data = run_hipass_data(self.spec_data[:, :, 10:-10])
+        hipass_model = run_hipass_model(self.spec_model)
+        
+        # get rid of nans
+        hipass_data[np.isnan(hipass_data)] = 0
+        
         # ccf on real data
-        ccf, rv_grid = cc_at_vrest(self.wl_data[:, 10:-10], hipass_data(self.spec_data[:, :, 10:-10]), self.wl_model, # had to include the wl buffer because funky interpolation things happen on the edges when you inject the model
-                                   hipass_model(self.spec_model), self.kp, self.ph,
+        ccf, rv_grid = cc_at_vrest(self.wl_data[:, 10:-10], hipass_data, self.wl_model, # had to include the wl buffer because funky interpolation things happen on the edges when you inject the model
+                                   hipass_model, self.kp, self.ph,
                                    self.rvtot, self.ncc)
                                   # hipass=False)
 

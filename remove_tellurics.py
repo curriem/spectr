@@ -1,5 +1,7 @@
 # this is where telluric removal code goes
 import numpy as np
+from scipy.interpolate import splrep, splev
+
 
 def standard(spec, **kwargs):
     #sp_wave = spec[0,1,:].copy()
@@ -72,6 +74,98 @@ def PCA(spec, **kwargs):
         detrended_spec[order] = A_last_PCs
 
     return detrended_spec
+
+#### PREFECTLY REMOVED TELLURICS
+
+
+def perfect(spec, **kwargs):
+    
+    def mask_outliers_phase_dependent(arr):
+        
+        norders, nph, nlam = arr.shape
+        
+        masked_arr = np.empty_like(arr)
+        
+        for no in range(norders):
+            for phase in range(nph):
+                print("phase:", phase)
+                arr_temp = outlier_mask(arr[no, phase, :])
+                arr_filled, outlier_inds = fill_nans(arr_temp)
+                hipass_arr = hipass_single(arr_filled)
+                hipass_arr[outlier_inds] = 0
+                masked_arr[no, phase, :] = hipass_arr
+                
+        return masked_arr
+        
+    def outlier_mask(data):
+        std_cut = 3
+        """mask outliers with NaN"""
+        data_copy = np.copy(data)
+        bin_width = 100
+        temp = np.where((data_copy > 1) | (data_copy < -1))
+        data_copy[temp] = np.nan
+        for i in range(len(data) - bin_width + 1):
+            map_inds = np.arange(i, i+bin_width, 1, dtype=int)
+            current_bin = data_copy[i:i+bin_width]
+            current_std = np.nanstd(current_bin)
+            current_med = np.nanmedian(current_bin)
+
+            current_outliers = (current_bin > current_med + std_cut*current_std) | (current_bin < current_med - std_cut*current_std)
+
+            outlier_inds = map_inds[current_outliers]
+            data_copy[outlier_inds] = np.nan
+        return data_copy
+
+    def fill_nans(data):
+        all_outliers = np.where(~np.isfinite(data))
+        data_filled = np.copy(data)
+        for outlier in all_outliers[0]:
+            width = 2
+            while True:
+                if np.isnan(np.nanmedian(data[outlier-width:outlier+width])):
+                    width += 1
+                else:
+                    data_filled[outlier] = np.nanmedian(data[outlier-width:outlier+width])
+                    break
+        assert np.isfinite(np.sum(data_filled))
+
+        return data_filled, all_outliers
+
+    def hipass_single(arr):
+        nbin = 100
+        nlam = len(arr)
+        bins = int(nlam / nbin)
+        xb = np.arange(nbin)*bins + bins/2.0
+        yb = np.zeros(nbin+2)
+        xb = np.append(np.append(0,xb),nlam-1)
+        for ib in range(nbin):
+            imin = int(ib*bins)
+            imax = int(imin + bins)
+            yb[ib+1] = np.nanmean(arr[imin:imax])
+            yb[0] = arr[0]
+            yb[-1] = arr[-1]
+        cs_bin = splrep(xb,yb,s=0.0)
+        fit = splev(np.arange(nlam),cs_bin,der=0)
+        arr -= fit
+        return arr
+    
+    
+    spec_oot = kwargs["spec_oot"] # out of transit observation
+    #saturated_telluric_inds = kwargs["saturated_telluric_inds"]
+    
+    detrended_spec = spec / spec_oot
+    
+    # when perfectly removing tellurics you must use an aggressive 
+    # outlier masking technique
+    
+    detrended_spec = mask_outliers_phase_dependent(detrended_spec)
+    
+    detrended_spec = 1 - detrended_spec
+    
+    return detrended_spec
+
+
+    
 
 # ADD SPORK IN
 
