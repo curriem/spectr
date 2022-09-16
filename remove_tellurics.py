@@ -88,7 +88,6 @@ def perfect(spec, **kwargs):
         
         for no in range(norders):
             for phase in range(nph):
-                print("phase:", phase)
                 arr_temp = outlier_mask(arr[no, phase, :])
                 arr_filled, outlier_inds = fill_nans(arr_temp)
                 hipass_arr = hipass_single(arr_filled)
