@@ -163,7 +163,19 @@ def perfect(spec, **kwargs):
     
     return detrended_spec
 
-
+def perfect_simple(spec, **kwargs):
+    spec_oot = kwargs["spec_oot"] # out of transit observation
+    tellurics = kwargs["tellurics"]
+    
+    saturated_telluric_inds = (tellurics < 0.8)
+    
+    detrended_spec = spec / spec_oot
+    
+    detrended_spec[saturated_telluric_inds[0]] = np.nan
+    
+    detrended_spec = 1 - detrended_spec
+    
+    return detrended_spec
     
 
 # ADD SPORK IN
