@@ -166,8 +166,9 @@ def perfect(spec, **kwargs):
 def perfect_simple(spec, **kwargs):
     spec_oot = kwargs["spec_oot"] # out of transit observation
     tellurics = kwargs["tellurics"]
+    saturation_metric = kwargs["saturation_metric"]
     
-    saturated_telluric_inds = (tellurics < 0.8)
+    saturated_telluric_inds = (tellurics < saturation_metric)
     
     detrended_spec = spec / spec_oot
     
