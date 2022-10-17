@@ -26,7 +26,7 @@ from scipy.interpolate import splrep, splev
 
 class SimulateObservation:
 
-    def __init__(self, star_name, era, molecule, band, obs_type, instrument_R=1e5, verbose=False, noise_scalar=1.):#, telescope_name, distance,
+    def __init__(self, star_name, era, molecule, band, obs_type, instrument_R=1e5, verbose=False, noise_scalar=1., add_clouds=False):#, telescope_name, distance,
                  #Vsystem, Vbary):
 
         self.star_name = star_name
@@ -37,6 +37,7 @@ class SimulateObservation:
         self.instrument_R = instrument_R
         self.verbose = verbose
         self.noise_scalar = noise_scalar
+        self.add_clouds = add_clouds
         #self.telescope_name = telescope_name
         #self.distance = distance
         #self.Vsystem = Vsystem
@@ -142,6 +143,32 @@ class SimulateObservation:
             self.tdepth_no_mol = tdepth_no_mol[sort_inds_trnst]
             self.tdepth_onlymol = self.tdepth - self.tdepth_no_mol
             
+            if self.add_clouds:
+                tdepth_clear = np.copy(self.tdepth)
+                tdepth_no_mol_clear = np.copy(self.tdepth_no_mol)
+    
+                smart_trnst_strato = smart.readsmart.Trnst(path+'/{}_{}_{}_strato_{}_{}cm.trnst'.format(self.star_name, self.molecule, self.band, self.wnmin, self.wnmax))
+                lam_strato, tdepth_strato = edge_effects(smart_trnst_strato, "trnst", self.wlmin, self.wlmax)
+    
+                smart_trnst_no_mol_strato = smart.readsmart.Trnst(path+'/{}_{}_{}_strato_no_{}_{}_{}cm.trnst'.format(self.star_name, self.molecule, self.band, self.molecule, self.wnmin, self.wnmax))
+                lam_no_mol_strato, tdepth_no_mol_strato = edge_effects(smart_trnst_no_mol_strato, "trnst", self.wlmin, self.wlmax)
+    
+                smart_trnst_cirrus = smart.readsmart.Trnst(path+'/{}_{}_{}_cirrus_{}_{}cm.trnst'.format(self.star_name, self.molecule, self.band, self.wnmin, self.wnmax))
+                lam_cirrus, tdepth_cirrus = edge_effects(smart_trnst_cirrus, "trnst", self.wlmin, self.wlmax)
+    
+                smart_trnst_no_mol_cirrus = smart.readsmart.Trnst(path+'/{}_{}_{}_cirrus_no_{}_{}_{}cm.trnst'.format(self.star_name, self.molecule, self.band, self.molecule, self.wnmin, self.wnmax))
+                lam_no_mol_cirrus, tdepth_no_mol_cirrus = edge_effects(smart_trnst_no_mol_cirrus, "trnst", self.wlmin, self.wlmax)
+                
+                smart_trnst_strato = tdepth_strato[sort_inds_trnst]
+                tdepth_no_mol_strato = tdepth_no_mol_strato[sort_inds_trnst]
+                tdepth_cirrus = tdepth_cirrus[sort_inds_trnst]
+                tdepth_no_mol_cirrus = tdepth_no_mol_cirrus[sort_inds_trnst]
+                
+                tdepth_with_clouds = 0.5*tdepth_clear + 0.25*tdepth_strato + 0.25*tdepth_cirrus
+                tdepth_no_mol_with_clouds = 0.5*tdepth_no_mol_clear + 0.25*tdepth_no_mol_strato + 0.25*tdepth_no_mol_cirrus
+            
+                self.tdepth = tdepth_with_clouds
+                self.tdepth_onlymol = self.tdepth - tdepth_no_mol_with_clouds
 
     def run(self, inclination, R_star, P_rot_star, P_orb, R_plan, P_rot_plan,
             a_plan, M_star, M_plan, RV_sys, RV_bary, texp, phases, dist):
