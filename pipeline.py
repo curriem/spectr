@@ -147,16 +147,16 @@ class SimulateObservation:
                 tdepth_clear = np.copy(self.tdepth)
                 tdepth_no_mol_clear = np.copy(self.tdepth_no_mol)
     
-                smart_trnst_strato = smart.readsmart.Trnst(path+'/{}_{}_{}_strato_{}_{}cm.trnst'.format(self.star_name, self.molecule, self.band, self.wnmin, self.wnmax))
+                smart_trnst_strato = smart.readsmart.Trnst(path+'/{}_{}_{}_{}_strato_{}_{}cm.trnst'.format(self.star_name, self.era, self.molecule, self.band, self.wnmin, self.wnmax))
                 lam_strato, tdepth_strato = edge_effects(smart_trnst_strato, "trnst", self.wlmin, self.wlmax)
     
-                smart_trnst_no_mol_strato = smart.readsmart.Trnst(path+'/{}_{}_{}_strato_no_{}_{}_{}cm.trnst'.format(self.star_name, self.molecule, self.band, self.molecule, self.wnmin, self.wnmax))
+                smart_trnst_no_mol_strato = smart.readsmart.Trnst(path+'/{}_{}_{}_{}_strato_no_{}_{}_{}cm.trnst'.format(self.star_name, self.era, self.molecule, self.band, self.molecule, self.wnmin, self.wnmax))
                 lam_no_mol_strato, tdepth_no_mol_strato = edge_effects(smart_trnst_no_mol_strato, "trnst", self.wlmin, self.wlmax)
     
-                smart_trnst_cirrus = smart.readsmart.Trnst(path+'/{}_{}_{}_cirrus_{}_{}cm.trnst'.format(self.star_name, self.molecule, self.band, self.wnmin, self.wnmax))
+                smart_trnst_cirrus = smart.readsmart.Trnst(path+'/{}_{}_{}_{}_cirrus_{}_{}cm.trnst'.format(self.star_name, self.era, self.molecule, self.band, self.wnmin, self.wnmax))
                 lam_cirrus, tdepth_cirrus = edge_effects(smart_trnst_cirrus, "trnst", self.wlmin, self.wlmax)
     
-                smart_trnst_no_mol_cirrus = smart.readsmart.Trnst(path+'/{}_{}_{}_cirrus_no_{}_{}_{}cm.trnst'.format(self.star_name, self.molecule, self.band, self.molecule, self.wnmin, self.wnmax))
+                smart_trnst_no_mol_cirrus = smart.readsmart.Trnst(path+'/{}_{}_{}_{}_cirrus_no_{}_{}_{}cm.trnst'.format(self.star_name, self.era, self.molecule, self.band, self.molecule, self.wnmin, self.wnmax))
                 lam_no_mol_cirrus, tdepth_no_mol_cirrus = edge_effects(smart_trnst_no_mol_cirrus, "trnst", self.wlmin, self.wlmax)
                 
                 smart_trnst_strato = tdepth_strato[sort_inds_trnst]
