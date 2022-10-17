@@ -766,6 +766,10 @@ class CompareCCFs:
         # so the absolute value of the slope is taken. This means that an anti-correlation
         # (negative slope) will increase the chi-square of the residuals rather than decrease
         # it, resulting into a delta(sigma) value < 0.
+        print(self.ccf_model)
+        assert np.isfinite(np.sum(self.ccf_model)), "THERE IS A NAN IN CCF_MODEL"
+        assert np.isfinite(np.sum(self.ccf_real)), "THERE IS A NAN IN CCF_REAL"
+
         coef = np.polyfit(self.ccf_model, self.ccf_real, 1)
         #        if coef[0] < 0: coef[0] = 0
         coef[0] = np.abs(coef[0])
