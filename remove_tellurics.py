@@ -164,6 +164,17 @@ def perfect(spec, **kwargs):
     return detrended_spec
 
 def perfect_simple(spec, **kwargs):
+    def sigma_clip(arr, sig=3.):
+        arr_copy = np.copy(arr)
+        arr_med = np.nanmedian(arr)
+        arr_std = np.nanstd(arr)
+        
+        loc = np.where(arr > arr_std*sig+arr_med)
+        arr_copy[loc] = np.nan
+        loc = np.where(arr <  -1*arr_std*sig+arr_med)
+        arr_copy[loc] = np.nan
+        return arr_copy
+        
     spec_oot = kwargs["spec_oot"] # out of transit observation
     tellurics = kwargs["tellurics"]
     saturation_metric = kwargs["saturation_metric"]
@@ -175,6 +186,8 @@ def perfect_simple(spec, **kwargs):
     detrended_spec[saturated_telluric_inds[0]] = np.nan
     
     detrended_spec = 1 - detrended_spec
+    
+    detrended_spec = sigma_clip(detrended_spec)
     
     return detrended_spec
     
