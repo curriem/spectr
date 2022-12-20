@@ -582,9 +582,9 @@ class SimulateObservation:
 
 
         #self.signal_matrix_no_T = signal_matrix_no_T
-        self.signal_matrix = signal_matrix
+        self.signal_matrix = signal_matrix[:, :, naninds]
         self.background_matrix = background_per_exposure*np.ones_like(signal_matrix)
-        self.noise_matrix = noise_matrix
+        self.noise_matrix = noise_matrix[:, :, naninds]
         self.SNR_matrix = SNR_matrix
         if self.obs_type == "refl":
             self.planet_matrix = planet_matrix
@@ -608,6 +608,15 @@ class SimulateObservation:
             self.simulated_data_oot = simulated_data_oot
             self.simulated_data_oot_no_noise = simulated_data_oot_no_noise
 
+
+    def new_observation(self):
+        new_rand_nums = np.random.randn(self.signal_matrix.shape[0], self.signal_matrix.shape[1], self.signal_matrix.shape[2])
+        new_noise = new_rand_nums * np.sqrt(self.noise_matrix)
+        new_data = self.signal_matrix + new_noise
+        
+        return new_data
+        #self.new_data = new_data[:, :, self.data_naninds]
+        
 
 
 
