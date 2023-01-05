@@ -119,6 +119,8 @@ def mattcc(fVec, gVec):
     sg2 = (gVec @ gVec)
     return (fVec @ gVec) / np.sqrt(sf2*sg2)
 
+
+
 def cc_at_vrest(wl_data, spec_data, wl_model, spec_model, kp, ph, rvtot, ncc, hipass=True):
 
     rv_grid = np.linspace(-150,150,ncc)

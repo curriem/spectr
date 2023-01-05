@@ -335,9 +335,9 @@ class SimulateObservation:
         f = interp1d(skycalc.lam, skycalc.trans, fill_value = "extrapolate")
         telluric_transmittance = f(self.lam)
         
-        
+        fstar_path1_matrix_no_T = np.copy(fstar_path1_matrix)
+
         if self.obs_type == "refl":
-            fstar_path1_matrix_no_T = np.copy(fstar_path1_matrix)
             fstar_path2_matrix_no_T = np.copy(fstar_path2_matrix)
             fplan_path2_matrix_no_T = np.copy(fplan_path2_matrix)
 
@@ -358,11 +358,11 @@ class SimulateObservation:
         for order in range(norders):
             for i in range(len(phases)):
                 fstar_path1_matrix[order, i] = instrumental_broadening(fstar_path1_matrix[order, i], self.lam, self.instrument_R)
+                fstar_path1_matrix_no_T[order, i] = instrumental_broadening(fstar_path1_matrix_no_T[order, i], self.lam, self.instrument_R)
                 if self.obs_type == "refl":
                     fstar_path2_matrix[order, i] = instrumental_broadening(fstar_path2_matrix[order, i], self.lam, self.instrument_R)
                     fplan_path2_matrix[order, i] = instrumental_broadening(fplan_path2_matrix[order, i], self.lam, self.instrument_R)
                     
-                    fstar_path1_matrix_no_T[order, i] = instrumental_broadening(fstar_path1_matrix_no_T[order, i], self.lam, self.instrument_R)
                     fstar_path2_matrix_no_T[order, i] = instrumental_broadening(fstar_path2_matrix_no_T[order, i], self.lam, self.instrument_R)
                     fplan_path2_matrix_no_T[order, i] = instrumental_broadening(fplan_path2_matrix_no_T[order, i], self.lam, self.instrument_R)
                 
@@ -380,11 +380,12 @@ class SimulateObservation:
 
 
         fstar_path1_instrument_matrix = np.empty((norders, len(phases), len(instrument_lam)))
+        fstar_path1_instrument_matrix_no_T = np.empty((norders, len(phases), len(instrument_lam)))
+
         if self.obs_type == "refl":
             fstar_path2_instrument_matrix = np.empty((norders, len(phases), len(instrument_lam)))
             fplan_path2_instrument_matrix = np.empty((norders, len(phases), len(instrument_lam)))
             
-            fstar_path1_instrument_matrix_no_T = np.empty((norders, len(phases), len(instrument_lam)))
             fstar_path2_instrument_matrix_no_T = np.empty((norders, len(phases), len(instrument_lam)))
             fplan_path2_instrument_matrix_no_T = np.empty((norders, len(phases), len(instrument_lam)))
             
@@ -395,11 +396,12 @@ class SimulateObservation:
         for order in range(norders):
             for i in range(len(phases)):
                 fstar_path1_instrument_matrix[order, i] = bin_to_instrument_lam(fstar_path1_matrix[order, i], self.lam, instrument_lam, instrument_dlam)
+                fstar_path1_instrument_matrix_no_T[order, i] = bin_to_instrument_lam(fstar_path1_matrix_no_T[order, i], self.lam, instrument_lam, instrument_dlam)
+
                 if self.obs_type == "refl":
                     fstar_path2_instrument_matrix[order, i] = bin_to_instrument_lam(fstar_path1_matrix[order, i], self.lam, instrument_lam, instrument_dlam)
                     fplan_path2_instrument_matrix[order, i] = bin_to_instrument_lam(fplan_path2_matrix[order, i], self.lam, instrument_lam, instrument_dlam)
                     
-                    fstar_path1_instrument_matrix_no_T[order, i] = bin_to_instrument_lam(fstar_path1_matrix_no_T[order, i], self.lam, instrument_lam, instrument_dlam)
                     fstar_path2_instrument_matrix_no_T[order, i] = bin_to_instrument_lam(fstar_path1_matrix_no_T[order, i], self.lam, instrument_lam, instrument_dlam)
                     fplan_path2_instrument_matrix_no_T[order, i] = bin_to_instrument_lam(fplan_path2_matrix_no_T[order, i], self.lam, instrument_lam, instrument_dlam)
 
@@ -412,19 +414,19 @@ class SimulateObservation:
         ############### Step 1f calculate fluxes ################
 
         Fs_observer_matrix = np.empty_like(fstar_path1_instrument_matrix)
+        Fs_observer_matrix_no_T = np.empty_like(fstar_path1_instrument_matrix)
         if self.obs_type == "refl":
             Fp_observer_matrix = np.empty_like(fstar_path1_instrument_matrix)
 
-            Fs_observer_matrix_no_T = np.empty_like(fstar_path1_instrument_matrix)
             Fp_observer_matrix_no_T = np.empty_like(fstar_path1_instrument_matrix)
 
         for order in range(norders):
             for i in range(len(phases)):
                 Fs_observer_matrix[order, i] = Fstar(fstar_path1_instrument_matrix[order, i], R_star, a_plan, dist)
+                Fs_observer_matrix_no_T[order, i] = Fstar(fstar_path1_instrument_matrix_no_T[order, i], R_star, a_plan, dist)
                 if self.obs_type == "refl":
                     Fp_observer_matrix[order, i] = Fplan(fplan_path2_instrument_matrix[order, i], R_plan, dist)
 
-                    Fs_observer_matrix_no_T[order, i] = Fstar(fstar_path1_instrument_matrix_no_T[order, i], R_star, a_plan, dist)
                     Fp_observer_matrix_no_T[order, i] = Fplan(fplan_path2_instrument_matrix_no_T[order, i], R_plan, dist)
         ########################################################################
 
@@ -436,19 +438,19 @@ class SimulateObservation:
 
 
         cs_matrix = np.empty_like(Fs_observer_matrix)
+        cs_matrix_no_T = np.empty_like(Fs_observer_matrix)
+
         if self.obs_type == "refl":
             cp_matrix = np.empty_like(Fp_observer_matrix)
 
-            cs_matrix_no_T = np.empty_like(Fp_observer_matrix_no_T)
             cp_matrix_no_T = np.empty_like(Fp_observer_matrix_no_T)
 
         for order in range(norders):
             for i in range(len(phases)):
                 cs_matrix[order, i] = cstar(q, fpa, T, instrument_lam, instrument_dlam, Fs_observer_matrix[order, i], D)
+                cs_matrix_no_T[order, i] = cstar(q, fpa, T, instrument_lam, instrument_dlam, Fs_observer_matrix_no_T[order, i], D)
                 if self.obs_type == "refl":
                     cp_matrix[order, i] = cplan(q, fpa, T, instrument_lam, instrument_dlam, Fp_observer_matrix[order, i], D)
-
-                    cs_matrix_no_T[order, i] = cstar(q, fpa, T, instrument_lam, instrument_dlam, Fs_observer_matrix_no_T[order, i], D)
                     cp_matrix_no_T[order, i] = cplan(q, fpa, T, instrument_lam, instrument_dlam, Fp_observer_matrix_no_T[order, i], D)
         ########################################################################
 
@@ -532,6 +534,10 @@ class SimulateObservation:
         signal_matrix = np.empty_like(cs_matrix)
         # signal_matrix_no_T = np.empty_like(cspeckle_matrix)
         noise_matrix = np.empty_like(cs_matrix)
+        if self.obs_type == "tran":
+            noise_oot_matrix = np.empty_like(cs_matrix)
+            signal_oot_matrix = np.empty_like(cs_matrix)
+
         # noise_matrix_no_T = np.empty_like(cspeckle_matrix)
         SNR_matrix = np.empty_like(cs_matrix)
         if self.obs_type == "refl":
@@ -553,15 +559,22 @@ class SimulateObservation:
                 # simulated_data[order] = signal + np.random.poisson(noise)
                 simulated_data[order] = signal[:, naninds] + rand_nums[:, naninds] * np.sqrt(noise[:, naninds])
                 simulated_data_no_noise[order] = signal[:, naninds]
-                
+            
             elif self.obs_type == "tran":
+# =============================================================================
+#                 signal = cs_matrix_no_T[order]*texp * (1 - tdepth_path2_instrument_matrix[order])
+#                 signal_oot = cs_matrix_no_T[order]*texp
+#                 
+# =============================================================================
+                
                 signal = cs_matrix[order]*texp * (1 - tdepth_path2_instrument_matrix[order])
                 signal_oot = cs_matrix[order]*texp
+                
+                noise = signal + background_per_exposure*np.ones_like(signal)
+                noise_oot =  signal_oot + background_per_exposure*np.ones_like(signal_oot)
+                
+                
                 star_matrix[order,] = cs_matrix[order]*texp
-                
-                noise = self.noise_scalar * np.sqrt(signal + background_per_exposure*np.ones_like(signal)) 
-                noise_oot = self.noise_scalar * np.sqrt(signal_oot + background_per_exposure*np.ones_like(signal_oot)) 
-                
                 SNR_matrix[order,] = signal_matrix[order,]  / noise_matrix[order,]
                 
                 simulated_data[order] = signal[:, naninds]  + rand_nums[:, naninds]*noise[:, naninds]
@@ -577,6 +590,9 @@ class SimulateObservation:
                 
             signal_matrix[order,] = signal
             noise_matrix[order,] = noise
+            if self.obs_type == "tran":
+                noise_oot_matrix[order,] = noise_oot
+                signal_oot_matrix[order,] = signal_oot
             
             
 
@@ -592,8 +608,11 @@ class SimulateObservation:
 
         if self.obs_type == "tran":
             self.tdepth_path2_instrument_matrix = tdepth_path2_instrument_matrix
+            self.noise_oot_matrix = noise_oot_matrix[:, :, naninds]
+            self.signal_oot_matrix = signal_oot_matrix[:, :, naninds]
         tellurics_instrument = instrumental_broadening(telluric_transmittance, self.lam, self.instrument_R)
         tellurics_instrument =  bin_to_instrument_lam(telluric_transmittance, self.lam, instrument_lam, instrument_dlam)
+        
         self.tellurics = tellurics_instrument
 
 
