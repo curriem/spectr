@@ -448,11 +448,11 @@ class SimulateObservation:
 
         for order in range(norders):
             for i in range(len(phases)):
-                cs_matrix[order, i] = cstar(q, fpa, T, instrument_lam, instrument_dlam, Fs_observer_matrix[order, i], D)
-                cs_matrix_no_T[order, i] = cstar(q, fpa, T, instrument_lam, instrument_dlam, Fs_observer_matrix_no_T[order, i], D)
+                cs_matrix[order, i] = cstar(q, fpa, T, instrument_lam, instrument_dlam, Fs_observer_matrix[order, i], self.tele_diam)
+                cs_matrix_no_T[order, i] = cstar(q, fpa, T, instrument_lam, instrument_dlam, Fs_observer_matrix_no_T[order, i], self.tele_diam)
                 if self.obs_type == "refl":
-                    cp_matrix[order, i] = cplan(q, fpa, T, instrument_lam, instrument_dlam, Fp_observer_matrix[order, i], D)
-                    cp_matrix_no_T[order, i] = cplan(q, fpa, T, instrument_lam, instrument_dlam, Fp_observer_matrix_no_T[order, i], D)
+                    cp_matrix[order, i] = cplan(q, fpa, T, instrument_lam, instrument_dlam, Fp_observer_matrix[order, i], self.tele_diam)
+                    cp_matrix_no_T[order, i] = cplan(q, fpa, T, instrument_lam, instrument_dlam, Fp_observer_matrix_no_T[order, i], self.tele_diam)
         ########################################################################
 
         ############### Step 1h background noise photon counts ################
@@ -469,13 +469,13 @@ class SimulateObservation:
 
         X = 3
 
-        csky = ctherm_earth(q, X, T, instrument_lam, instrument_dlam, D, sky_background, CIRC=False)
+        csky = ctherm_earth(q, X, T, instrument_lam, instrument_dlam, self.tele_diam, sky_background, CIRC=False)
 
         ### THERMAL IS INCLUDED IN SKYCALC
         # # telescope thermal
         # mirror_temp = 285 # K
         # emissivity = 0.14
-        # ctele = hrt.photon_counts.ctherm(q, X, T, instrument_lam, instrument_dlam, D, mirror_temp, emissivity)
+        # ctele = hrt.photon_counts.ctherm(q, X, T, instrument_lam, instrument_dlam, self.tele_diam, mirror_temp, emissivity)
 
         # dark current
         pix_per_res_element = 6
