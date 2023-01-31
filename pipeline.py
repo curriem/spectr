@@ -66,7 +66,8 @@ class SimulateObservation:
                          "ocs" : {"2400" : [[4032, 4132],[2.42, 2.48]],
                                   "3200" : [[3058, 3125],[3.2, 3.27]],
                                   "3400" : [[2873, 2941],[3.4, 3.48]]},
-                         "so2" : {"2400" : [[3921, 4081],[2.45, 2.55]]}
+                         "so2" : {"2400" : [[3921, 4081],[2.45, 2.55]]},
+                         "full" : {"full": [[1886, 33333], [0.3, 5.]]}
                          }
         self.wnmin, self.wnmax = molecule_band_dict[self.molecule][self.band][0]
         self.wlmin, self.wlmax = molecule_band_dict[self.molecule][self.band][1]
@@ -171,7 +172,7 @@ class SimulateObservation:
                 self.tdepth_onlymol = self.tdepth - tdepth_no_mol_with_clouds
 
     def run(self, inclination, R_star, P_rot_star, P_orb, R_plan, P_rot_plan,
-            a_plan, M_star, M_plan, RV_sys, RV_bary, texp, phases, dist):
+            a_plan, M_star, M_plan, RV_sys, RV_bary, texp, phases, dist, tele_diam):
 
         """
         Parameters
@@ -232,9 +233,9 @@ class SimulateObservation:
         q = 1.
         fpa = 1.
         T = 0.1
-        D = 30
+        #D = 30
 
-        self.tele_diam = D
+        self.tele_diam = tele_diam
 
         norders = 1
 
