@@ -456,9 +456,13 @@ class SimulateObservation:
         ########################################################################
 
         ############### Step 1h background noise photon counts ################
-
+        pix_per_res_element = 100
+        pixel_size = 0.01 # arcsec
+        total_res_element_size = pixel_size**2 * pix_per_res_element
+        
+        
         # sky background--- includes zodi, starlight, moonlight, atmospheric emission, airglow, thermal
-        sky_background = skycalc.flux
+        sky_background = skycalc.flux_raw
         sky_lam = skycalc.lam
 
         # instrumental broadening
@@ -468,9 +472,12 @@ class SimulateObservation:
         sky_background = bin_to_instrument_lam(sky_background, sky_lam, instrument_lam, instrument_dlam)
 
         X = 3
-
-        csky = ctherm_earth(q, X, T, instrument_lam, instrument_dlam, self.tele_diam, sky_background, CIRC=False)
-
+        
+        # run below if sky flux is W/m2/um
+        #csky = ctherm_earth(q, X, T, instrument_lam, instrument_dlam, self.tele_diam, sky_background, CIRC=False)
+        
+        csky = sky_background * total_res_element_size
+        
         ### THERMAL IS INCLUDED IN SKYCALC
         # # telescope thermal
         # mirror_temp = 285 # K
@@ -478,15 +485,28 @@ class SimulateObservation:
         # ctele = hrt.photon_counts.ctherm(q, X, T, instrument_lam, instrument_dlam, self.tele_diam, mirror_temp, emissivity)
 
         # dark current
-        pix_per_res_element = 6
-        dark_photons_per_pix_per_s = 0.00111111 # from ELT ETC
-        cdark = pix_per_res_element * dark_photons_per_pix_per_s * np.ones_like(instrument_lam)
+# =============================================================================
+#         dark_photons_per_pix_per_s = 0.00111111 # from ELT ETC
+# =============================================================================
+        cdark = np.zeros_like(instrument_lam)
+
+        vis_dark_photons_per_pix_per_s = 0.0002
+        nir_dark_photons_per_pix_per_s = 0.015
+
+        vis_inds = (instrument_lam < 1.)
+        nir_inds = (instrument_lam >= 1.)
+
+        cdark[vis_inds] = cdark[vis_inds] + pix_per_res_element*vis_dark_photons_per_pix_per_s
+        cdark[nir_inds] = cdark[nir_inds] + pix_per_res_element*nir_dark_photons_per_pix_per_s
 
         # read noise
         read_noise_per_pix = 3
         read_noise_per_exposure = read_noise_per_pix * pix_per_res_element * np.ones_like(instrument_lam)
 
         # total noise per exposure
+        self.sky_counts = csky*texp
+        self.dark_counts = cdark*texp
+        self.read_counts = read_noise_per_exposure
         background_per_exposure = csky*texp + cdark*texp + read_noise_per_exposure
         ########################################################################
 
