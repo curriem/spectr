@@ -324,11 +324,14 @@ class SimulateObservation:
         skycalc.wgrid_mode = "fixed_spectral_resolution"
         skycalc.wres = skycalc_R
         skycalc.airmass = 1.15
-        skycalc.moon_sun_sep = 90.0
+        skycalc.incl_moon = "N"
         # thermal
         skycalc.incl_therm = "Y"
         skycalc.therm_t1 = 285
         skycalc.therm_e1 = 0.14
+        skycalc.therm_t2 = 90
+        skycalc.therm_e2 = 0.14
+        
 
         skycalc.run_skycalc('../metadata/sky/skycalc_{}_{}.fits'.format(self.molecule, self.band))
 
@@ -457,13 +460,18 @@ class SimulateObservation:
 
         ############### Step 1h background noise photon counts ################
         pix_per_res_element = 100
-        pixel_size = 0.01 # arcsec
-        total_res_element_size = pixel_size**2 * pix_per_res_element
+        X = 3 # size of aperture in lam/D
+        
         
         
         # sky background--- includes zodi, starlight, moonlight, atmospheric emission, airglow, thermal
-        sky_background = skycalc.flux_raw
+        sky_background = skycalc.flux_raw_excl_moon # units are photons/s/m2/μm/arcsec2
         sky_lam = skycalc.lam
+        omega_sky = np.pi*(X*sky_lam*1e-6/self.tele_diam*180.*3600./np.pi)**2. # arcsec2
+        
+        sky_background *= omega_sky # units are photons/s/m2/um
+        
+        sky_background = sky_background * np.pi * (self.tele_diam/2)**2 * T # units are photons/s/um 
 
         # instrumental broadening
         sky_background = instrumental_broadening(sky_background, sky_lam, self.instrument_R)
@@ -471,12 +479,12 @@ class SimulateObservation:
         # interpolate onto instrument wl grid
         sky_background = bin_to_instrument_lam(sky_background, sky_lam, instrument_lam, instrument_dlam)
 
-        X = 3
+       
         
         # run below if sky flux is W/m2/um
         #csky = ctherm_earth(q, X, T, instrument_lam, instrument_dlam, self.tele_diam, sky_background, CIRC=False)
         
-        csky = sky_background * total_res_element_size
+        csky = sky_background
         
         ### THERMAL IS INCLUDED IN SKYCALC
         # # telescope thermal
