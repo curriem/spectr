@@ -460,7 +460,7 @@ class SimulateObservation:
 
         ############### Step 1h background noise photon counts ################
         pix_per_res_element = 100
-        X = 3 # size of aperture in lam/D
+        X = 2 # size of aperture in lam/D
         
         
         
@@ -509,13 +509,17 @@ class SimulateObservation:
 
         # read noise
         read_noise_per_pix = 3
-        read_noise_per_exposure = read_noise_per_pix * pix_per_res_element * np.ones_like(instrument_lam)
+        #read_noise_per_exposure = read_noise_per_pix * pix_per_res_element * np.ones_like(instrument_lam)
+        
+        read_noise = np.sqrt(pix_per_res_element) * read_noise_per_pix * np.ones_like(instrument_lam)
 
+        
+        
         # total noise per exposure
-        self.sky_counts = csky*texp
-        self.dark_counts = cdark*texp
-        self.read_counts = read_noise_per_exposure
-        background_per_exposure = csky*texp + cdark*texp + read_noise_per_exposure
+        self.sky_noise = np.sqrt(csky*texp)
+        self.dark_noise = np.sqrt(cdark*texp)
+        self.read_noise = read_noise
+        #background_per_exposure = csky*texp + cdark*texp + read_noise_per_exposure
         ########################################################################
 
         if self.obs_type == "refl":
@@ -599,28 +603,32 @@ class SimulateObservation:
                 signal = cs_matrix[order]*texp * (1 - tdepth_path2_instrument_matrix[order])
                 signal_oot = cs_matrix[order]*texp
                 
-                noise = signal + background_per_exposure*np.ones_like(signal)
-                noise_oot =  signal_oot + background_per_exposure*np.ones_like(signal_oot)
+# =============================================================================
+#                 noise = signal + background_per_exposure*np.ones_like(signal)
+#                 noise_oot =  signal_oot + background_per_exposure*np.ones_like(signal_oot)
+# =============================================================================
+                
+                #noise = np.sqrt(signal + self.sky_noise**2 + self.dark_noise**2 + self.read_noise**2)
+                #noise_oot =  np.sqrt(signal_oot + self.sky_noise**2 + self.dark_noise**2 + self.read_noise**2)
+                
+                #star_matrix[order,] = cs_matrix[order]*texp
+                #SNR_matrix[order,] = signal_matrix[order,]  / noise_matrix[order,]
+                
+                #simulated_data[order] = signal[:, naninds]  + rand_nums[:, naninds]*noise[:, naninds]
+                #simulated_data_no_noise[order] = signal[:, naninds]
                 
                 
-                star_matrix[order,] = cs_matrix[order]*texp
-                SNR_matrix[order,] = signal_matrix[order,]  / noise_matrix[order,]
+                #rand_nums_oot = np.random.randn(len(phases), len(instrument_lam))     
+                #simulated_data_oot[order] = signal_oot[:, naninds] + rand_nums_oot[:, naninds]*noise_oot[:, naninds]
                 
-                simulated_data[order] = signal[:, naninds]  + rand_nums[:, naninds]*noise[:, naninds]
-                simulated_data_no_noise[order] = signal[:, naninds]
-                
-                
-                rand_nums_oot = np.random.randn(len(phases), len(instrument_lam))     
-                simulated_data_oot[order] = signal_oot[:, naninds] + rand_nums_oot[:, naninds]*noise_oot[:, naninds]
-                
-                simulated_data_oot_no_noise[order] = signal_oot[:, naninds]
+                #simulated_data_oot_no_noise[order] = signal_oot[:, naninds]
                 
                 
                 
             signal_matrix[order,] = signal
-            noise_matrix[order,] = noise
+            #noise_matrix[order,] = noise
             if self.obs_type == "tran":
-                noise_oot_matrix[order,] = noise_oot
+                #noise_oot_matrix[order,] = noise_oot
                 signal_oot_matrix[order,] = signal_oot
             
             
@@ -628,16 +636,16 @@ class SimulateObservation:
 
         #self.signal_matrix_no_T = signal_matrix_no_T
         self.signal_matrix = signal_matrix[:, :, naninds]
-        self.background_matrix = background_per_exposure*np.ones_like(signal_matrix)
-        self.noise_matrix = noise_matrix[:, :, naninds]
-        self.SNR_matrix = SNR_matrix
+        #self.background_matrix = background_per_exposure*np.ones_like(signal_matrix)
+        #self.noise_matrix = noise_matrix[:, :, naninds]
+        #self.SNR_matrix = SNR_matrix
         if self.obs_type == "refl":
             self.planet_matrix = planet_matrix
         self.star_matrix = star_matrix
 
         if self.obs_type == "tran":
             self.tdepth_path2_instrument_matrix = tdepth_path2_instrument_matrix
-            self.noise_oot_matrix = noise_oot_matrix[:, :, naninds]
+            #self.noise_oot_matrix = noise_oot_matrix[:, :, naninds]
             self.signal_oot_matrix = signal_oot_matrix[:, :, naninds]
         tellurics_instrument = instrumental_broadening(telluric_transmittance, self.lam, self.instrument_R)
         tellurics_instrument =  bin_to_instrument_lam(telluric_transmittance, self.lam, instrument_lam, instrument_dlam)
@@ -646,15 +654,15 @@ class SimulateObservation:
 
 
 
-        self.simulated_data = simulated_data
-        self.simulated_data_no_noise = simulated_data_no_noise
-        self.simulated_data_no_tellurics = simulated_data_no_tellurics
+        #self.simulated_data = simulated_data
+        #self.simulated_data_no_noise = simulated_data_no_noise
+        #self.simulated_data_no_tellurics = simulated_data_no_tellurics
         self.instrument_lam = np.expand_dims(instrument_lam[naninds], axis=0)
         self.instrument_dlam = np.expand_dims(instrument_dlam[naninds], axis=0)
         
-        if self.obs_type == "tran":
-            self.simulated_data_oot = simulated_data_oot
-            self.simulated_data_oot_no_noise = simulated_data_oot_no_noise
+        #if self.obs_type == "tran":
+            #self.simulated_data_oot = simulated_data_oot
+            #self.simulated_data_oot_no_noise = simulated_data_oot_no_noise
 
 
     def new_observation(self):
