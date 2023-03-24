@@ -1,19 +1,5 @@
 # pipeline.py
 
-
-# User defined params
-
-# molecule = "o2"
-# band = "1270"
-# telescope_name = "ELT"
-# star_name = "prxcn_pie"
-# dist = 1.3 * unit.pc
-# phot_band = "J"
-# vs = 20
-# vb = 0
-# niter = 100
-# v_shift_range = 100
-# v_shift_width = 1
 import smart
 import numpy as np
 from .manipulate_spectra import *
@@ -233,7 +219,6 @@ class SimulateObservation:
         q = 1.
         fpa = 1.
         T = 0.1
-        #D = 30
 
         self.tele_diam = tele_diam
 
@@ -350,10 +335,6 @@ class SimulateObservation:
         if self.obs_type == "refl":
             fstar_path2_matrix *= telluric_transmittance
             fplan_path2_matrix *= telluric_transmittance
-# =============================================================================
-#         elif self.obs_type == "tran":
-#             tdepth_path2_matrix *= telluric_transmittance
-# =============================================================================
 
         ########################################################################
 
@@ -536,15 +517,17 @@ class SimulateObservation:
 
 
 
-        if self.obs_type == "refl":
-            ################### interpolate model A onto instrument wl grid ########
-    
-            # instrumental broadening
-            self.model_A = instrumental_broadening(self.model_A, self.lam, self.instrument_R)
-    
-            # interpolate onto instrument wl grid
-            self.model_A = bin_to_instrument_lam(self.model_A, self.lam, instrument_lam, instrument_dlam)
-            
+# =============================================================================
+#         if self.obs_type == "refl":
+#             ################### interpolate model A onto instrument wl grid ########
+#     
+#             # instrumental broadening
+#             self.model_A = instrumental_broadening(self.model_A, self.lam, self.instrument_R)
+#     
+#             # interpolate onto instrument wl grid
+#             self.model_A = bin_to_instrument_lam(self.model_A, self.lam, instrument_lam, instrument_dlam)
+#             
+# =============================================================================
         
         
 
@@ -562,91 +545,78 @@ class SimulateObservation:
             simulated_data_oot = np.empty_like(cs_matrix[:, :, naninds])
             simulated_data_oot_no_noise = np.empty_like(cs_matrix[:, :, naninds])
 
-        # random numbers to simulate poisson noise
 
         signal_matrix = np.empty_like(cs_matrix)
-        # signal_matrix_no_T = np.empty_like(cspeckle_matrix)
+        signal_matrix_no_T = np.empty_like(cs_matrix)
         noise_matrix = np.empty_like(cs_matrix)
+        
         if self.obs_type == "tran":
             noise_oot_matrix = np.empty_like(cs_matrix)
             signal_oot_matrix = np.empty_like(cs_matrix)
+        elif self.obs_type == "refl":
+            signal_only_star_matrix = np.empty_like(cs_matrix)
+            signal_only_star_matrix_no_T = np.empty_like(cs_matrix)
+            signal_only_speckle_matrix = np.empty_like(cs_matrix)
+            signal_only_speckle_matrix_no_T = np.empty_like(cs_matrix)
 
         # noise_matrix_no_T = np.empty_like(cspeckle_matrix)
-        SNR_matrix = np.empty_like(cs_matrix)
-        if self.obs_type == "refl":
-            planet_matrix = np.empty_like(cs_matrix)
-        star_matrix = np.empty_like(cs_matrix)
+
 
         # SNR_no_T_matrix = np.empty_like(cspeckle_matrix)
         for order in range(norders):
             rand_nums = np.random.randn(len(phases), len(instrument_lam))            
 
             if self.obs_type == "refl":
-                signal = cp_matrix_no_T[order]*texp
+                signal = cp_matrix[order]*texp
+                signal_no_T = cp_matrix_no_T[order]*texp
+                signal_only_star = cs_matrix[order] * texp
+                signal_only_star_no_T = cs_matrix_no_T[order] * texp
+                signal_only_star_matrix[order,] = signal_only_star
+                signal_only_star_matrix_no_T[order,] = signal_only_star_no_T
                 
-                noise = background_per_exposure*np.ones_like(signal) + cp_matrix[order]*texp + cspeckle_matrix[order,]*texp
-                
-                SNR_matrix[order,] = cp_matrix[order]*texp  / np.sqrt(noise_matrix[order,])
+                signal_only_speckle = cspeckle_matrix[order] * texp
+                signal_only_speckle_no_T = cspeckle_matrix_no_T[order] * texp
+                signal_only_speckle_matrix[order,] = signal_only_speckle
+                signal_only_speckle_matrix_no_T[order,] = signal_only_speckle_no_T
 
-                #simulated_data_no_tellurics[order,] = self.model_A + self.model_A/SNR_matrix[order,] * rand_nums
-                # simulated_data[order] = signal + np.random.poisson(noise)
-                simulated_data[order] = signal[:, naninds] + rand_nums[:, naninds] * np.sqrt(noise[:, naninds])
-                simulated_data_no_noise[order] = signal[:, naninds]
+                
+                signal_matrix_no_T[order,] = signal_no_T
+                
             
             elif self.obs_type == "tran":
-# =============================================================================
-#                 signal = cs_matrix_no_T[order]*texp * (1 - tdepth_path2_instrument_matrix[order])
-#                 signal_oot = cs_matrix_no_T[order]*texp
-#                 
-# =============================================================================
                 
                 signal = cs_matrix[order]*texp * (1 - tdepth_path2_instrument_matrix[order])
                 signal_oot = cs_matrix[order]*texp
+                signal_oot_no_T = cs_matrix_no_T[order]*texp
                 
-# =============================================================================
-#                 noise = signal + background_per_exposure*np.ones_like(signal)
-#                 noise_oot =  signal_oot + background_per_exposure*np.ones_like(signal_oot)
-# =============================================================================
-                
-                #noise = np.sqrt(signal + self.sky_noise**2 + self.dark_noise**2 + self.read_noise**2)
-                #noise_oot =  np.sqrt(signal_oot + self.sky_noise**2 + self.dark_noise**2 + self.read_noise**2)
-                
-                #star_matrix[order,] = cs_matrix[order]*texp
-                #SNR_matrix[order,] = signal_matrix[order,]  / noise_matrix[order,]
-                
-                #simulated_data[order] = signal[:, naninds]  + rand_nums[:, naninds]*noise[:, naninds]
-                #simulated_data_no_noise[order] = signal[:, naninds]
-                
-                
-                #rand_nums_oot = np.random.randn(len(phases), len(instrument_lam))     
-                #simulated_data_oot[order] = signal_oot[:, naninds] + rand_nums_oot[:, naninds]*noise_oot[:, naninds]
-                
-                #simulated_data_oot_no_noise[order] = signal_oot[:, naninds]
+                signal_oot_matrix[order,] = signal_oot
                 
                 
                 
             signal_matrix[order,] = signal
-            #noise_matrix[order,] = noise
-            if self.obs_type == "tran":
-                #noise_oot_matrix[order,] = noise_oot
-                signal_oot_matrix[order,] = signal_oot
-            
+
+                
             
 
-
-        #self.signal_matrix_no_T = signal_matrix_no_T
+        
+        
         self.signal_matrix = signal_matrix[:, :, naninds]
-        #self.background_matrix = background_per_exposure*np.ones_like(signal_matrix)
-        #self.noise_matrix = noise_matrix[:, :, naninds]
-        #self.SNR_matrix = SNR_matrix
-        if self.obs_type == "refl":
-            self.planet_matrix = planet_matrix
-        self.star_matrix = star_matrix
+
 
         if self.obs_type == "tran":
             self.tdepth_path2_instrument_matrix = tdepth_path2_instrument_matrix
-            #self.noise_oot_matrix = noise_oot_matrix[:, :, naninds]
             self.signal_oot_matrix = signal_oot_matrix[:, :, naninds]
+            
+        if self.obs_type == "refl":
+            self.signal_matrix_no_T = signal_matrix_no_T[:, :, naninds]
+            self.signal_only_star = signal_only_star_matrix[:, :, naninds]
+            self.signal_only_star_no_T = signal_only_star_matrix_no_T[:, :, naninds]
+
+            self.signal_only_speckle = signal_only_speckle_matrix[:, :, naninds]
+            self.signal_only_speckle_no_T = signal_only_speckle_matrix_no_T[:, :, naninds]
+
+            
+            
         tellurics_instrument = instrumental_broadening(telluric_transmittance, self.lam, self.instrument_R)
         tellurics_instrument =  bin_to_instrument_lam(telluric_transmittance, self.lam, instrument_lam, instrument_dlam)
         
@@ -654,15 +624,9 @@ class SimulateObservation:
 
 
 
-        #self.simulated_data = simulated_data
-        #self.simulated_data_no_noise = simulated_data_no_noise
-        #self.simulated_data_no_tellurics = simulated_data_no_tellurics
         self.instrument_lam = np.expand_dims(instrument_lam[naninds], axis=0)
         self.instrument_dlam = np.expand_dims(instrument_dlam[naninds], axis=0)
         
-        #if self.obs_type == "tran":
-            #self.simulated_data_oot = simulated_data_oot
-            #self.simulated_data_oot_no_noise = simulated_data_oot_no_noise
 
 
     def new_observation(self):
@@ -671,7 +635,6 @@ class SimulateObservation:
         new_data = self.signal_matrix + new_noise
         
         return new_data
-        #self.new_data = new_data[:, :, self.data_naninds]
         
 
 

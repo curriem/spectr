@@ -377,6 +377,23 @@ class SkyFlux:
         flux_sky = output_fits[1].data["flux"]
         trans_sky = output_fits[1].data["trans"]
         scattered_moonlight = output_fits[1].data["flux_sml"]
+        
+        scattered_starlight = output_fits[1].data["FLUX_SSL"]
+        zodiacal_light = output_fits[1].data["FLUX_ZL"]
+        tme_lower = output_fits[1].data["FLUX_TME"]
+        tme_upper = output_fits[1].data["FLUX_AEL"]
+        airglow_cont = output_fits[1].data["FLUX_ARC"]
+        tele_inst =  output_fits[1].data["FLUX_TIE"]
+        
+        self.scattered_starlight = scattered_starlight
+        self.zodiacal_light = zodiacal_light
+        self.tme_lower = tme_lower
+        self.airglow_cont = airglow_cont
+        self.tme_upper = tme_upper
+        self.tele_inst = tele_inst
+
+        
+
 
         self.flux_raw = flux_sky
         self.flux_raw_excl_moon = flux_sky - scattered_moonlight
