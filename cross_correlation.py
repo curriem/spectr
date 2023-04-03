@@ -138,9 +138,11 @@ def cc_at_vrest(wl_data, spec_data, wl_model, spec_model, kp, ph, rvtot, ncc, hi
 
             wl_model_shift = wl_data * (1.0 - lagTemp[cc_ind]/2.998E5) # doppler shift
             spec_model_shift = splev(wl_model_shift, cs, der=0, ext=1) # the model interpolated onto data wl grid
+            
             for order in range(norders):
                 fVec = spec_data[order,j,].copy()
                 gVec = spec_model_shift[order,].copy()
+
                 ccf[order, j, cc_ind] = mattcc(fVec,gVec)
     # Removing gradients and trends in the CCF
     if hipass:

@@ -12,7 +12,7 @@ from scipy.interpolate import splrep, splev
 
 class SimulateObservation:
 
-    def __init__(self, star_name, era, molecule, band, obs_type, instrument_R=1e5, verbose=False, noise_scalar=1., add_clouds=False):#, telescope_name, distance,
+    def __init__(self, star_name, era, molecule, band, obs_type, instrument_R=1e5, verbose=False, noise_scalar=1., add_clouds=False, coronagraph_contrast=1e-5):#, telescope_name, distance,
                  #Vsystem, Vbary):
 
         self.star_name = star_name
@@ -24,6 +24,7 @@ class SimulateObservation:
         self.verbose = verbose
         self.noise_scalar = noise_scalar
         self.add_clouds = add_clouds
+        self.coronagraph_contrast = coronagraph_contrast
         #self.telescope_name = telescope_name
         #self.distance = distance
         #self.Vsystem = Vsystem
@@ -109,6 +110,8 @@ class SimulateObservation:
 
 
         self.fplan_fstar_only_mol = self.fplan / self.fstar - self.fplan_no_mol/self.fstar
+        
+
 
         self.model_A = self.fplan / self.fstar
 
@@ -506,14 +509,14 @@ class SimulateObservation:
         if self.obs_type == "refl":
             ############### Step 1i mask star light with coronagraph ################
     
-            coronagraph_contrast = 1e-5
+            
     
             cspeckle_matrix = np.copy(cs_matrix)
             cspeckle_matrix_no_T = np.copy(cs_matrix_no_T)
             for order in range(norders):
                 for i in range(len(phases)):
-                    cspeckle_matrix[order, i,] *= coronagraph_contrast
-                    cspeckle_matrix_no_T[order, i,] *= coronagraph_contrast
+                    cspeckle_matrix[order, i,] *= self.coronagraph_contrast
+                    cspeckle_matrix_no_T[order, i,] *= self.coronagraph_contrast
 
 
 
