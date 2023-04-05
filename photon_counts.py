@@ -147,6 +147,26 @@ def ctherm(q, X, T, lam, dlam, D, Tsys, emis, CIRC=False):
     return np.pi*q*T*dlam*emis*Bsys*Omega*(lam*1.e-6/hc)*(D/2)**2.
 
 def Fstar(fstar, R_star, a_p, dist):
+    """
+    
+
+    Parameters
+    ----------
+    fstar : float or array-like
+        Stellar flux [W/m**2/um]
+    R_star : float
+        radius of star in km
+    a_p : float
+        semi-major axis of planet [AU]
+    dist : float
+        distance to system [pc]
+
+    Returns
+    -------
+    array
+        stellar flux at earth
+
+    """
 
     Bstar = fstar / ( np.pi*(R_star/\
                    (a_p.to(unit.km)))**2. )
@@ -157,6 +177,23 @@ def Fstar(fstar, R_star, a_p, dist):
     return Fs * (unit.W / unit.m**2 / unit.um)
 
 def Fplan(fplan, R_plan, dist, Phi=1):
+    """
+    Parameters
+    ----------
+    fplan : float or array-like
+        Planet flux [W/m**2/um]
+    R_plan : float
+        radius of planet in km
+
+    dist : float
+        distance to system [pc]
+
+    Returns
+    -------
+    array
+        planet flux at earth
+
+    """
 
     Fp = fplan * Phi * (R_plan / dist.to(unit.km))**2
     return Fp * (unit.W / unit.m**2 / unit.um)

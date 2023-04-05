@@ -178,6 +178,24 @@ class SimulateObservation:
             radius of the planet [earth radii]
         P_rot_plan : scalar
             period of planet rotation [s]
+        a_plan : float
+            semi-major axis of planet [AU]
+        M_star : float
+            mass of the star [solar masses]
+        M_plan : float
+            mass of the planet [earth masses]
+        RV_sys : float
+            radial velocity of the system [km/s]
+        RV_bary : float
+            barycentric radial velocity [km/s]
+        texp :  float
+            exposure time per frame [s]
+        phases : 1d arr
+            phases of planet to be observed
+        dist : float
+            distance to system [pc]
+        tele_diam : float
+            diameter of telescope [m]
         """
 
 # =============================================================================
@@ -219,13 +237,13 @@ class SimulateObservation:
         self.incl = inclination
         self.a_plan = a_plan
 
-        q = 1.
-        fpa = 1.
-        T = 0.1
+        q = 1. # quantum efficiency
+        fpa = 1. # fraction of planet light observed
+        T = 0.1 # total throughput of telescope/instrument/detector
 
         self.tele_diam = tele_diam
 
-        norders = 1
+        norders = 1 # number of orders observed
 
         # calculate rotational velocities:
         v_proj_star = calc_v_proj_star(inclination, R_star, P_rot_star)
