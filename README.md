@@ -1,0 +1,2 @@
+# spectr
+Welcome! This is the source code for my high contrast/high resolution terrestrial planet detectability projects. This is very much still a work in progress, but all of the basic capabilities are up and running. There is a tutorial for transmission spectroscopy that shows how to simulate and subsequently compute detection significances for a very basic case. Please feel free to get in touch with me if you have any questions, and I hope you find this repository helpful. Thank you for reading! 
