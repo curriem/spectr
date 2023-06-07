@@ -61,7 +61,7 @@ def calc_significance_chi2(ccf, rv_grid, trail_bound=25):
     iin = np.abs(rv_grid) < trail_bound           # boolean
     nin = iin.sum()                 # how many 'falses'
 
-    ccf_variance = np.std(ccf[iout])**2    # CCF variance (away from peak)
+    ccf_variance = np.nanstd(ccf[iout])**2    # CCF variance (away from peak)
     ccf_chi2 = (ccf[iin]**2).sum() / ccf_variance   # Chi-square of peak
 
     ccf_sigma = stats.norm.isf(stats.chi2.sf(ccf_chi2,nin-1)/2)   # Chi-square -> sigma
@@ -73,8 +73,8 @@ def calc_significance_simple(ccf, rv_grid, trail_bound=25):
     iin = np.abs(rv_grid) < trail_bound           # boolean
     nin = iin.sum()                 # how many 'falses'
 
-    ccf_std = np.std(ccf[iout])    # CCF variance (away from peak)
-    ccf_max = np.max(ccf[iin])
+    ccf_std = np.nanstd(ccf[iout])    # CCF variance (away from peak)
+    ccf_max = np.nanmax(ccf[iin])
 
     ccf_sigma = ccf_max / ccf_std
     return ccf_sigma
@@ -113,11 +113,19 @@ def mattcc(fVec, gVec):
     the data (fVec) and the model (gVec). '''
     N, = fVec.shape
     Id = np.ones(N)
-    fVec -= (fVec @ Id) / N
-    gVec -= (gVec @ Id) / N
-    sf2 = (fVec @ fVec)
-    sg2 = (gVec @ gVec)
-    return (fVec @ gVec) / np.sqrt(sf2*sg2)
+# =============================================================================
+#     fVec -= (fVec @ Id) / N
+#     gVec -= (gVec @ Id) / N
+#     sf2 = (fVec @ fVec)
+#     sg2 = (gVec @ gVec)
+#     return (fVec @ gVec) / np.sqrt(sf2*sg2)
+# =============================================================================
+
+    fVec -= np.nansum(fVec * Id) / N
+    gVec -= np.nansum(gVec * Id) / N
+    sf2 = np.nansum(fVec * fVec)
+    sg2 = np.nansum(gVec * gVec)
+    return np.nansum(fVec * gVec) / np.sqrt(sf2*sg2)
 
 
 
@@ -156,7 +164,7 @@ def cc_at_vrest(wl_data, spec_data, wl_model, spec_model, kp, ph, rvtot, ncc, hi
                 for ib in range(nbin):
                     imin = int(ib*bins)
                     imax = int(imin + bins)
-                    yb[ib+1] = np.mean(ccf[io,j,imin:imax])
+                    yb[ib+1] = np.nanmean(ccf[io,j,imin:imax])
                     yb[0] = ccf[io, j, 0]
                     yb[-1] = ccf[io, j, -1]
                 cs_bin = splrep(xb,yb,s=0.0)
