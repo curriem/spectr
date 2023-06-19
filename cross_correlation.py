@@ -73,10 +73,14 @@ def calc_significance_simple(ccf, rv_grid, trail_bound=25):
     iin = np.abs(rv_grid) < trail_bound           # boolean
     nin = iin.sum()                 # how many 'falses'
 
-    ccf_std = np.nanstd(ccf[iout])    # CCF variance (away from peak)
-    ccf_max = np.nanmax(ccf[iin])
+    ccf_std = np.nanstd(ccf[iout], ddof=1)    # CCF variance (away from peak)
+    
+    ccf_signal_ind = np.argmin(np.abs(rv_grid))
 
-    ccf_sigma = ccf_max / ccf_std
+    ccf_signal = ccf[ccf_signal_ind]
+    
+
+    ccf_sigma = ccf_signal / ccf_std
     return ccf_sigma
 
 def calc_significance_ttest(ccf, rv_grid, trail_bound=25):
@@ -129,9 +133,9 @@ def mattcc(fVec, gVec):
 
 
 
-def cc_at_vrest(wl_data, spec_data, wl_model, spec_model, kp, ph, rvtot, ncc, hipass=True):
+def cc_at_vrest(wl_data, spec_data, wl_model, spec_model, kp, ph, rvtot, ncc, cc_lim=150, hipass=True):
 
-    rv_grid = np.linspace(-150,150,ncc)
+    rv_grid = np.linspace(-1*cc_lim,cc_lim,ncc)
     norders, nph, nlam = spec_data.shape
     ccf = np.zeros((norders, nph, ncc))
 

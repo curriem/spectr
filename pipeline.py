@@ -37,7 +37,8 @@ class SimulateObservation:
                          "ch4" : {"890"  : [[10989, 11428], [0.875, 0.91]],
                                   "1100" : [[8333, 9090], [1.1, 1.2]],
                                   "1300" : [[6451, 7692], [1.3, 1.55]],
-                                  "1600" : [[5000, 6250], [1.6, 2.0]]},
+                                  #"1600" : [[5000, 6250], [1.6, 2.0]]},
+                                  "1600" : [[5555, 6250], [1.6, 1.8]]},
                          "co2" : {"1590" : [[6024, 6578], [1.52, 1.66]],
                                   "2000" : [[4807, 5154], [1.94, 2.08]]},
                          "h2o" : {"900"  : [[10101, 11235], [0.89, 0.99]],
@@ -257,16 +258,18 @@ class SimulateObservation:
         K_p = calc_Kp(a_plan, P_orb, M_star, M_plan, inclination=inclination)
         self.K_p = K_p
 
-        ############### Step 1a rotationally broaden spectra ##################
-        fstar_path1 = rotational_broadening(self.lam, fstar_path1, v_proj_star.value, 0.6)
-
-        if self.obs_type == "refl":
-            fstar_path2 = rotational_broadening(self.lam, fstar_path2, v_proj_star.value, 0.6)
-            fplan_path2 = rotational_broadening(self.lam, fplan_path2, v_refl_plan.value, 0.6)
-        elif self.obs_type == "tran":
-            tdepth_path2 = rotational_broadening(self.lam, tdepth_path2, v_refl_plan.value, 0.6)
-        ########################################################################
-
+# =============================================================================
+#         ############### Step 1a rotationally broaden spectra ##################
+#         fstar_path1 = rotational_broadening(self.lam, fstar_path1, v_proj_star.value, 0.6)
+# 
+#         if self.obs_type == "refl":
+#             fstar_path2 = rotational_broadening(self.lam, fstar_path2, v_proj_star.value, 0.6)
+#             fplan_path2 = rotational_broadening(self.lam, fplan_path2, v_refl_plan.value, 0.6)
+#         elif self.obs_type == "tran":
+#             tdepth_path2 = rotational_broadening(self.lam, tdepth_path2, v_refl_plan.value, 0.6)
+#         ########################################################################
+# 
+# =============================================================================
 
         ############### Step 1b doppler shift the spectra ##################
 
