@@ -133,6 +133,7 @@ def mattcc(fVec, gVec):
 
 
 
+
 def cc_at_vrest(wl_data, spec_data, wl_model, spec_model, kp, ph, rvtot, ncc, cc_lim=150, hipass=True):
 
     rv_grid = np.linspace(-1*cc_lim,cc_lim,ncc)

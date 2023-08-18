@@ -578,6 +578,7 @@ class SimulateObservation:
         if self.obs_type == "tran":
             noise_oot_matrix = np.empty_like(cs_matrix)
             signal_oot_matrix = np.empty_like(cs_matrix)
+            signal_oot_matrix_no_T = np.empty_like(cs_matrix)
         elif self.obs_type == "refl":
             signal_only_star_matrix = np.empty_like(cs_matrix)
             signal_only_star_matrix_no_T = np.empty_like(cs_matrix)
@@ -611,10 +612,15 @@ class SimulateObservation:
             elif self.obs_type == "tran":
                 
                 signal = cs_matrix[order]*texp * (1 - tdepth_path2_instrument_matrix[order])
+                signal_no_T = cs_matrix_no_T[order]*texp * (1 - tdepth_path2_instrument_matrix[order])
                 signal_oot = cs_matrix[order]*texp
                 signal_oot_no_T = cs_matrix_no_T[order]*texp
                 
                 signal_oot_matrix[order,] = signal_oot
+                signal_oot_matrix_no_T[order,] = signal_oot_no_T
+                
+                signal_matrix_no_T[order,] = signal_no_T
+
                 
                 
                 
@@ -631,6 +637,9 @@ class SimulateObservation:
         if self.obs_type == "tran":
             self.tdepth_path2_instrument_matrix = tdepth_path2_instrument_matrix
             self.signal_oot_matrix = signal_oot_matrix[:, :, naninds]
+            self.signal_oot_matrix_no_T = signal_oot_matrix_no_T[:, :, naninds]
+            self.signal_matrix_no_T = signal_matrix_no_T[:, :, naninds]
+
             
         if self.obs_type == "refl":
             self.signal_matrix_no_T = signal_matrix_no_T[:, :, naninds]
