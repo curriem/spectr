@@ -135,5 +135,6 @@ def bin_to_instrument_lam(flux, lam, instrument_lam, instrument_dlam):
     LRedges = np.hstack([instrument_lam - 0.5*instrument_dlam, instrument_lam[-1]+0.5*instrument_dlam[-1]])
 
     # Call scipy.stats.binned_statistic()
+
     instrument_spec = binned_statistic(lam, flux, statistic="mean", bins=LRedges)[0]
     return instrument_spec

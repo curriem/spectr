@@ -12,7 +12,7 @@ from scipy.interpolate import splrep, splev
 
 class SimulateObservation:
 
-    def __init__(self, star_name, era, molecule, band, obs_type, instrument_R=1e5, verbose=False, noise_scalar=1., add_clouds=False, coronagraph_contrast=1e-5):#, telescope_name, distance,
+    def __init__(self, star_name, era, molecule, band, obs_type, instrument_R=1e5, verbose=False, noise_scalar=1., add_clouds=False, coronagraph_contrast=1e-5, skycalc_path = '../metadata/sky/'):#, telescope_name, distance,
                  #Vsystem, Vbary):
 
         self.star_name = star_name
@@ -25,6 +25,7 @@ class SimulateObservation:
         self.noise_scalar = noise_scalar
         self.add_clouds = add_clouds
         self.coronagraph_contrast = coronagraph_contrast
+        self.skycalc_path = skycalc_path
         #self.telescope_name = telescope_name
         #self.distance = distance
         #self.Vsystem = Vsystem
@@ -56,7 +57,14 @@ class SimulateObservation:
                                   "3200" : [[3058, 3125],[3.2, 3.27]],
                                   "3400" : [[2873, 2941],[3.4, 3.48]]},
                          "so2" : {"2400" : [[3921, 4081],[2.45, 2.55]]},
-                         "full" : {"full": [[1886, 33333], [0.3, 5.]]}
+                         "full" : {"full": [[5000, 20000], [0.5, 2.]]},
+                         "nh3" : {"1010" : [[9433, 9900], [1.01, 1.06]],
+                                  "1150" : [[7407, 8695], [1.15, 1.35]],
+                                  "1430" : [[6369, 6993], [1.43, 1.57]],
+                                  "1900" : [[4878, 5263], [1.9, 2.05]],
+                                  "2150" : [[4166, 4651], [2.15, 2.4]]},
+                         "h2" :  {"780"  : [[11363, 12820], [0.78, 0.88]],
+                                  "1200" : [[7692, 9090], [1.1, 1.3]]},
                          }
         self.wnmin, self.wnmax = molecule_band_dict[self.molecule][self.band][0]
         self.wlmin, self.wlmax = molecule_band_dict[self.molecule][self.band][1]
@@ -200,6 +208,8 @@ class SimulateObservation:
             diameter of telescope [m]
         """
 
+
+
 # =============================================================================
 #         # Define two photon paths:
 #         # Path 1: star to observer
@@ -325,7 +335,7 @@ class SimulateObservation:
         ############### Step 1c add tellurics to the spectra ##################
 
         # set telluric resolution to be retrieved
-        skycalc_R = 1e5
+        skycalc_R = 1e6
 
         # retrieve tellurics
         skycalc = SkyFlux()
@@ -342,12 +352,18 @@ class SimulateObservation:
         skycalc.therm_t2 = 90
         skycalc.therm_e2 = 0.14
         
+        
+        
+        skycalc.run_skycalc(self.skycalc_path+'/skycalc_{}_{}.fits'.format(self.molecule, self.band))
 
-        skycalc.run_skycalc('../metadata/sky/skycalc_{}_{}.fits'.format(self.molecule, self.band))
 
-        # interpolate onto spectrum wl grid
-        f = interp1d(skycalc.lam, skycalc.trans, fill_value = "extrapolate")
+        
+        # skycalc updated to give lam values in nm. convert back to um
+        skycalc.lam /= 1000
+         
+        f = interp1d(skycalc.lam, skycalc.trans, fill_value="extrapolate")
         telluric_transmittance = f(self.lam)
+
         
         fstar_path1_matrix_no_T = np.copy(fstar_path1_matrix)
 
@@ -360,6 +376,8 @@ class SimulateObservation:
         if self.obs_type == "refl":
             fstar_path2_matrix *= telluric_transmittance
             fplan_path2_matrix *= telluric_transmittance
+            
+        
 
         ########################################################################
 

@@ -373,10 +373,10 @@ class SkyFlux:
             print("DONE")
 
         output_fits = pyfits.open(output_fl)
-        lam_sky = output_fits[1].data["lam"]
-        flux_sky = output_fits[1].data["flux"]
-        trans_sky = output_fits[1].data["trans"]
-        scattered_moonlight = output_fits[1].data["flux_sml"]
+        lam_sky = output_fits[1].data["LAM"]
+        flux_sky = output_fits[1].data["FLUX"]
+        trans_sky = output_fits[1].data["TRANS"]
+        scattered_moonlight = output_fits[1].data["FLUX_SML"]
         
         scattered_starlight = output_fits[1].data["FLUX_SSL"]
         zodiacal_light = output_fits[1].data["FLUX_ZL"]
