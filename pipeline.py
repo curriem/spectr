@@ -12,7 +12,7 @@ from scipy.interpolate import splrep, splev
 
 class SimulateObservation:
 
-    def __init__(self, star_name, era, molecule, band, obs_type, instrument_R=1e5, verbose=False, noise_scalar=1., add_clouds=False, coronagraph_contrast=1e-5, skycalc_path = '../metadata/sky/'):#, telescope_name, distance,
+    def __init__(self, star_name, era, molecule, band, obs_type, instrument_R=1e5, verbose=False, noise_scalar=1., add_clouds=False, coronagraph_contrast=1e-5, skycalc_path = '../metadata/sky/', inst_broaden=True):#, telescope_name, distance,
                  #Vsystem, Vbary):
 
         self.star_name = star_name
@@ -26,6 +26,7 @@ class SimulateObservation:
         self.add_clouds = add_clouds
         self.coronagraph_contrast = coronagraph_contrast
         self.skycalc_path = skycalc_path
+        self.inst_broaden = inst_broaden
         #self.telescope_name = telescope_name
         #self.distance = distance
         #self.Vsystem = Vsystem
@@ -382,25 +383,31 @@ class SimulateObservation:
         ########################################################################
 
         ############### Step 1d instrumental broadening ##################
-        # instrumental broadening
-        for order in range(norders):
-            for i in range(len(phases)):
-                fstar_path1_matrix[order, i] = instrumental_broadening(fstar_path1_matrix[order, i], self.lam, self.instrument_R)
-                fstar_path1_matrix_no_T[order, i] = instrumental_broadening(fstar_path1_matrix_no_T[order, i], self.lam, self.instrument_R)
-                if self.obs_type == "refl":
-                    fstar_path2_matrix[order, i] = instrumental_broadening(fstar_path2_matrix[order, i], self.lam, self.instrument_R)
-                    fplan_path2_matrix[order, i] = instrumental_broadening(fplan_path2_matrix[order, i], self.lam, self.instrument_R)
+        if self.inst_broaden:
+            print("Running instrumental broadening. This may take a while...")
+            # instrumental broadening
+            for order in range(norders):
+                for i in range(len(phases)):
+                    fstar_path1_matrix[order, i] = instrumental_broadening(fstar_path1_matrix[order, i], self.lam, self.instrument_R)
+                    fstar_path1_matrix_no_T[order, i] = instrumental_broadening(fstar_path1_matrix_no_T[order, i], self.lam, self.instrument_R)
+                    if self.obs_type == "refl":
+                        fstar_path2_matrix[order, i] = instrumental_broadening(fstar_path2_matrix[order, i], self.lam, self.instrument_R)
+                        fplan_path2_matrix[order, i] = instrumental_broadening(fplan_path2_matrix[order, i], self.lam, self.instrument_R)
+                        
+                        fstar_path2_matrix_no_T[order, i] = instrumental_broadening(fstar_path2_matrix_no_T[order, i], self.lam, self.instrument_R)
+                        fplan_path2_matrix_no_T[order, i] = instrumental_broadening(fplan_path2_matrix_no_T[order, i], self.lam, self.instrument_R)
                     
-                    fstar_path2_matrix_no_T[order, i] = instrumental_broadening(fstar_path2_matrix_no_T[order, i], self.lam, self.instrument_R)
-                    fplan_path2_matrix_no_T[order, i] = instrumental_broadening(fplan_path2_matrix_no_T[order, i], self.lam, self.instrument_R)
-                
-                elif self.obs_type == "tran":
-                    tdepth_path2_matrix[order, i] = instrumental_broadening(tdepth_path2_matrix[order, i], self.lam, self.instrument_R)
+                    elif self.obs_type == "tran":
+                        tdepth_path2_matrix[order, i] = instrumental_broadening(tdepth_path2_matrix[order, i], self.lam, self.instrument_R)
 
+        else:
+            print("WARNING: Skipping instrument broadening step!")
+            pass
 
                 
 
         ############### Step 1e interpolate onto instrument wl grid ##################
+        print("Interpolating onto instrument wl grid...")
 
 
         # construct instrument wl grid and interpolate onto it
@@ -440,6 +447,8 @@ class SimulateObservation:
         ########################################################################
 
         ############### Step 1f calculate fluxes ################
+        print("Done.")
+        print("Calculating fluxes...")
 
         Fs_observer_matrix = np.empty_like(fstar_path1_instrument_matrix)
         Fs_observer_matrix_no_T = np.empty_like(fstar_path1_instrument_matrix)
@@ -459,6 +468,8 @@ class SimulateObservation:
         ########################################################################
 
         ############### Step 1g planet/star photon counts ################
+        print("Done.")
+        print("Calculating photon counts...")
         if self.obs_type == "refl":
             self.Fp_observer_matrix = Fp_observer_matrix
             
@@ -483,6 +494,8 @@ class SimulateObservation:
         ########################################################################
 
         ############### Step 1h background noise photon counts ################
+        print("Done.")
+        print("Calculating background...")
         pix_per_res_element = 100
         X = 2 # size of aperture in lam/D
         
@@ -496,9 +509,9 @@ class SimulateObservation:
         sky_background *= omega_sky # units are photons/s/m2/um
         
         sky_background = sky_background * np.pi * (self.tele_diam/2)**2 * T # units are photons/s/um 
-
-        # instrumental broadening
-        sky_background = instrumental_broadening(sky_background, sky_lam, self.instrument_R)
+        if self.inst_broaden:
+            # instrumental broadening
+            sky_background = instrumental_broadening(sky_background, sky_lam, self.instrument_R)
 
         # interpolate onto instrument wl grid
         sky_background = bin_to_instrument_lam(sky_background, sky_lam, instrument_lam, instrument_dlam)
@@ -545,9 +558,12 @@ class SimulateObservation:
         self.read_noise = read_noise
         #background_per_exposure = csky*texp + cdark*texp + read_noise_per_exposure
         ########################################################################
+        
 
         if self.obs_type == "refl":
             ############### Step 1i mask star light with coronagraph ################
+            print("Done.")
+            print("Masking star light...")
     
             
     
@@ -577,6 +593,8 @@ class SimulateObservation:
 
 
         ############### Step 1j construct simulated dataset ################
+        print("Done.")
+        print("Constructing simulated dataset...")
 
         naninds = ~np.isnan(cs_matrix[0, 0, :])
         self.data_naninds = naninds
@@ -669,7 +687,8 @@ class SimulateObservation:
 
             
             
-        tellurics_instrument = instrumental_broadening(telluric_transmittance, self.lam, self.instrument_R)
+        if self.inst_broaden:
+            tellurics_instrument = instrumental_broadening(telluric_transmittance, self.lam, self.instrument_R)
         tellurics_instrument =  bin_to_instrument_lam(telluric_transmittance, self.lam, instrument_lam, instrument_dlam)
         
         self.tellurics = tellurics_instrument
@@ -678,6 +697,7 @@ class SimulateObservation:
 
         self.instrument_lam = np.expand_dims(instrument_lam[naninds], axis=0)
         self.instrument_dlam = np.expand_dims(instrument_dlam[naninds], axis=0)
+        print("Done.")
         
 
 

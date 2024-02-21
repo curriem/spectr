@@ -86,7 +86,7 @@ def instrumental_broadening(specHR, lamHR, res):
 
     len_lam = len(lamHR)
     dxs = lamHR[1:] - lamHR[0:-1]
-    x_ker = (np.arange(len_lam, dtype=np.int) - np.sum(np.divmod(len_lam, 2)) + 1) * dxs[0]
+    x_ker = (np.arange(len_lam, dtype=np.int_) - np.sum(np.divmod(len_lam, 2)) + 1) * dxs[0]
     y_ker = 1 / np.sqrt(2.*np.pi*sigma**2) * np.exp(-(0 - x_ker)**2/(2.0 * sigma**2))
 
     y_ker /= np.sum(y_ker)
