@@ -496,7 +496,7 @@ class SimulateObservation:
         ############### Step 1h background noise photon counts ################
         print("Done.")
         print("Calculating background...")
-        pix_per_res_element = 100
+        pix_per_res_element = 10
         X = 2 # size of aperture in lam/D
         
         
@@ -509,6 +509,10 @@ class SimulateObservation:
         sky_background *= omega_sky # units are photons/s/m2/um
         
         sky_background = sky_background * np.pi * (self.tele_diam/2)**2 * T # units are photons/s/um 
+        
+        sky_background = sky_background[:-1] * np.diff(sky_lam)
+        sky_lam = sky_lam[:-1]
+        
         if self.inst_broaden:
             # instrumental broadening
             sky_background = instrumental_broadening(sky_background, sky_lam, self.instrument_R)
